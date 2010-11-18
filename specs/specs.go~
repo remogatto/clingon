@@ -1,0 +1,37 @@
+package specs
+
+import (
+	"⚛sdl"
+	"⚛sdl/ttf"
+	pt "spectrum/prettytest"
+	c "console"
+)
+
+var (
+	console *c.Console
+	appSurface *sdl.Surface
+)
+
+func before(t *pt.T) {
+	if sdl.Init(sdl.INIT_VIDEO) != 0 {
+		panic(sdl.GetError())
+	}
+
+	if ttf.Init() != 0 {
+		panic(sdl.GetError())
+	}
+
+	font := ttf.OpenFont("../testdata/fontin_sans.otf", 72)
+
+	if font == nil {
+		panic(sdl.GetError())
+	}
+
+	appSurface = sdl.SetVideoMode(640, 480, 32, 0)
+	console = c.NewConsole(c.NewSDLConsole(640, 480, font))
+}
+
+func after(t *pt.T) {
+	sdl.Quit()
+}
+
