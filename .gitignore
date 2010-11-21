@@ -1,0 +1,8 @@
+*~
+*.8
+*.out
+_testmain*
+_test/
+_obj*
+x
+

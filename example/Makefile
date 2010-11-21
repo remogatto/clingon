@@ -1,7 +1,8 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=example
-GOFILES=example.go
+TARG=shell
+GOFILES=shell.go\
+	evaluator.go\
 
 DEPS+="../"
 

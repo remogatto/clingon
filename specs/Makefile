@@ -1,6 +1,6 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=console/specs
+TARG=cli/specs
 GOFILES=specs.go
 
 DEPS+="../"

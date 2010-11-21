@@ -1,4 +1,4 @@
-package console
+package cli
 
 import (
 	"⚛sdl"

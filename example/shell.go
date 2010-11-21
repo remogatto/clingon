@@ -5,20 +5,15 @@ import (
 	"⚛sdl/ttf"
 	"fmt"
 	"strings"
-	c "console"
+	"cli"
 )
 
 var (
-	console *c.Console
-	sdlrenderer *c.SDLRenderer
+	console *cli.Console
+	sdlrenderer *cli.SDLRenderer
 	appSurface, gopher *sdl.Surface
 	running, toUpper bool
 )
-
-type EchoEvaluator struct {}
-func (*EchoEvaluator) Run(command string) string {
-	return command
-}
 
 func render() {
 	appSurface.Blit(&sdl.Rect{0, 0, 0, 0}, gopher, nil)
@@ -35,7 +30,7 @@ func sdlinit() {
 		panic(sdl.GetError())
 	}
 
-	font := ttf.OpenFont("../testdata/fontin_sans.otf", 20)
+	font := ttf.OpenFont("../testdata/VeraMono.ttf", 12)
 
 	if font == nil {
 		panic(sdl.GetError())
@@ -45,10 +40,10 @@ func sdlinit() {
 	appSurface = sdl.SetVideoMode(640, 480, 32, 0)
 	gopher = sdl.Load("../testdata/gopher.jpg")
 
-	sdlrenderer = c.NewSDLRenderer(sdl.CreateRGBSurface(sdl.SRCALPHA, 560, 400, 32, 0, 0, 0, 0), font)
+	sdlrenderer = cli.NewSDLRenderer(sdl.CreateRGBSurface(sdl.SRCALPHA, 560, 400, 32, 0, 0, 0, 0), font)
 	sdlrenderer.GetSurface().SetAlpha(sdl.SRCALPHA, 0xaa)
 
-	console = c.NewConsole(sdlrenderer, &EchoEvaluator{})
+	console = cli.NewConsole(sdlrenderer, &ShellEvaluator{})
 	console.SetPrompt("console> ")
 }
 
@@ -87,13 +82,13 @@ func main() {
 					} else if (keyName == "left shift") && (e.Type == sdl.KEYDOWN) {
 						toUpper = true
 					} else if (keyName == "up") && (e.Type == sdl.KEYDOWN) {
-						console.HistoryCh() <- c.HISTORY_PREV
+						console.HistoryCh() <- cli.HISTORY_PREV
 					} else if (keyName == "down") && (e.Type == sdl.KEYDOWN) {
-						console.HistoryCh() <- c.HISTORY_NEXT
+						console.HistoryCh() <- cli.HISTORY_NEXT
 					} else if (keyName == "left") && (e.Type == sdl.KEYDOWN) {
-						console.CursorCh() <- c.CURSOR_LEFT
+						console.CursorCh() <- cli.CURSOR_LEFT
 					} else if (keyName == "right") && (e.Type == sdl.KEYDOWN) {
-						console.CursorCh() <- c.CURSOR_RIGHT
+						console.CursorCh() <- cli.CURSOR_RIGHT
 					} else {
 						unicode := e.Keysym.Unicode
 						if unicode > 0 {

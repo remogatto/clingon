@@ -5,7 +5,7 @@ import (
 	"⚛sdl/ttf"
 	"time"
 	pt "spectrum/prettytest"
-	c "console"
+	"cli"
 )
 
 const (
@@ -15,9 +15,9 @@ const (
 )
 
 var (
-	console *c.Console
+	console *cli.Console
 	echoer Echoer
-	sdlrenderer *c.SDLRenderer
+	sdlrenderer *cli.SDLRenderer
 	appSurface, gopher *sdl.Surface
 )
 
@@ -32,16 +32,16 @@ type Interactor interface {
 }
 
 type EnterCommand struct {
-	console *c.Console
+	console *cli.Console
 	command string
 	time int64
 }
 
-func NewEnterCommand(console *c.Console, command string, time int64) *EnterCommand {
+func NewEnterCommand(console *cli.Console, command string, time int64) *EnterCommand {
 	return &EnterCommand{console, command + "\u000d", time}
 }
 
-func ExecuteEnterCommand(console *c.Console, command string, time int64) (done bool) {
+func ExecuteEnterCommand(console *cli.Console, command string, time int64) (done bool) {
 	doneCh := make(chan bool)
 	go (&EnterCommand{console, command + "\u000d", time}).Interact(doneCh)
 	for {
@@ -61,12 +61,12 @@ func (i *EnterCommand) Interact(done chan bool) {
 }
 
 type BrowseHistory struct {
-	console *c.Console
+	console *cli.Console
 	dirs []int
 	time int64
 }
 
-func NewBrowseHistory(console *c.Console, dirs []int, time int64) *BrowseHistory {
+func NewBrowseHistory(console *cli.Console, dirs []int, time int64) *BrowseHistory {
 	return &BrowseHistory{console, dirs, time}
 }
 func (i *BrowseHistory) Interact(done chan bool) {
@@ -78,11 +78,11 @@ func (i *BrowseHistory) Interact(done chan bool) {
 }
 
 type MoveCursor struct {
-	console *c.Console
+	console *cli.Console
 	dirs []int
 	time int64
 }
-func NewMoveCursor(console *c.Console, dirs []int, time int64) *MoveCursor {
+func NewMoveCursor(console *cli.Console, dirs []int, time int64) *MoveCursor {
 	return &MoveCursor{console, dirs, time}
 }
 func (i *MoveCursor) Interact(done chan bool) {
@@ -108,13 +108,12 @@ func Interact(interactions []Interactor) (done bool) {
 }
 
 func render() {
-	appSurface.FillRect(&sdl.Rect{0, 0, 640, 480}, 0)
-	appSurface.Blit(&sdl.Rect{195, 115, 0, 0}, gopher, nil)
-	appSurface.Blit(&sdl.Rect{0, 0, 0, 0}, sdlrenderer.GetSurface(), nil)
-	appSurface.Flip()
+	appSurface.Blit(&sdl.Rect{0, 0, 0, 0}, gopher, nil)
+	appSurface.Blit(&sdl.Rect{40, 40, 0, 0}, sdlrenderer.GetSurface(), &sdl.Rect{0,0, 560, 400})
+	appSurface.UpdateRect(40, 40, 560, 400)
 }
 
-func before(t *pt.T) {
+func beforeAll(t *pt.T) {
 	if sdl.Init(sdl.INIT_VIDEO) != 0 {
 		panic(sdl.GetError())
 	}
@@ -123,24 +122,25 @@ func before(t *pt.T) {
 		panic(sdl.GetError())
 	}
 
-	font := ttf.OpenFont("../testdata/fontin_sans.otf", 12)
+	font := ttf.OpenFont("../testdata/VeraMono.ttf", 12)
 
 	if font == nil {
 		panic(sdl.GetError())
 	}
 
 	appSurface = sdl.SetVideoMode(640, 480, 32, 0)
-	gopher = sdl.Load("../testdata/gopher.png")
+	gopher = sdl.Load("../testdata/gopher.jpg")
 
-	sdlrenderer = c.NewSDLRenderer(sdl.CreateRGBSurface(sdl.SRCALPHA, 640, 480, 32, 0, 0, 0, 0), font)
+	sdlrenderer = cli.NewSDLRenderer(sdl.CreateRGBSurface(sdl.SRCALPHA, 560, 400, 32, 0, 0, 0, 0), font)
 	sdlrenderer.GetSurface().SetAlpha(sdl.SRCALPHA, 0xaa)
 
-	console = c.NewConsole(sdlrenderer, &Echoer{})
+	console = cli.NewConsole(sdlrenderer, &Echoer{})
 
 	render()
+	appSurface.Flip()
 }
 
-func after(t *pt.T) {
+func afterAll(t *pt.T) {
 	sdl.Quit()
 }
 
