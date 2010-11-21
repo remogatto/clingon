@@ -108,7 +108,7 @@ func (renderer *SDLRenderer) clearPrompt() {
 
 func (renderer *SDLRenderer) renderLine(pos int, line string) {
 	white := sdl.Color{255, 255, 255, 0}
-	textSurface := ttf.RenderText_Blended(renderer.font, line, white)
+	textSurface := ttf.RenderUTF8_Blended(renderer.font, line, white)
 
 	x := renderer.layout.commandLineRect.X
 	y := int16(renderer.layout.commandLineRect.Y) - int16(renderer.layout.commandLineRect.H * uint16(pos))
