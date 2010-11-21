@@ -18,9 +18,8 @@ type metrics struct {
 }
 
 func (m *metrics) calcMetrics() {
-	padding := int16(float(m.fontHeight)/100*30)
 	m.cursorWidth = uint16(m.fontWidth) 
-	m.cursorHeight = uint16(m.fontHeight) - uint16(padding)
+	m.cursorHeight = uint16(m.fontHeight)
 	m.lastVisibleLine = int(float(m.height) / float(m.fontHeight))
 
 	m.commandLineRect = m.calcCommandLineRect()

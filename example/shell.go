@@ -44,7 +44,7 @@ func sdlinit() {
 	sdlrenderer.GetSurface().SetAlpha(sdl.SRCALPHA, 0xaa)
 
 	console = cli.NewConsole(sdlrenderer, &ShellEvaluator{})
-	console.SetPrompt("console> ")
+	console.SetPrompt("shell:$ ")
 }
 
 func main() {
