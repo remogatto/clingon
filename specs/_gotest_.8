@@ -1,299 +1,0 @@
-386
-  exports automatically generated from
-  console_spec_test.go in package "specs"
-
-$$  // exports
-    package specs
-	import console "console"
-	type "console".Console struct { lines *"container/vector".StringVector; currLine *"container/vector".StringVector; cursorPosition int; prompt string; renderer "console".Renderer; charCh chan string; backspaceCh chan bool; returnCh chan bool }
-	func (console *"console".Console) CharCh () chan<- string
-	func (console *"console".Console) GetCurrentLine () string
-	func (console *"console".Console) Pop ()
-	func (console *"console".Console) Push (str string)
-	func (console *"console".Console) Return ()
-	func (console *"console".Console) ReturnCh () chan<- bool
-	func (console *"console".Console) SetPrompt (prompt string)
-	func (console *"console".Console) loop ()
-	import vector "container/vector"
-	type "container/vector".StringVector []string
-	func (p *"container/vector".StringVector) AppendVector (x *"container/vector".StringVector)
-	func (p *"container/vector".StringVector) At (i int) string
-	func (p *"container/vector".StringVector) Cap () int
-	func (p *"container/vector".StringVector) Copy () "container/vector".StringVector
-	func (p *"container/vector".StringVector) Cut (i int, j int)
-	func (p *"container/vector".StringVector) Delete (i int)
-	func (p *"container/vector".StringVector) Do (f func(elem string))
-	func (p *"container/vector".StringVector) Expand (i int, n int)
-	func (p *"container/vector".StringVector) Extend (n int)
-	func (p *"container/vector".StringVector) Insert (i int, x string)
-	func (p *"container/vector".StringVector) InsertVector (i int, x *"container/vector".StringVector)
-	func (p *"container/vector".StringVector) Last () string
-	func (p *"container/vector".StringVector) Len () int
-	func (p *"container/vector".StringVector) Less (i int, j int) bool
-	func (p *"container/vector".StringVector) Pop () string
-	func (p *"container/vector".StringVector) Push (x string)
-	func (p *"container/vector".StringVector) Resize (length int, capacity int) *"container/vector".StringVector
-	func (p *"container/vector".StringVector) Set (i int, x string)
-	func (p *"container/vector".StringVector) Slice (i int, j int) *"container/vector".StringVector
-	func (p *"container/vector".StringVector) Swap (i int, j int)
-	func (p *"container/vector".StringVector) realloc (length int, capacity int) []string
-	type "console".Renderer interface { Init(console *"console".Console); Update() }
-	var "".console *"console".Console
-	import sdl "âš›sdl"
-	type "âš›sdl".Rect struct { X int16; Y int16; W uint16; H uint16 }
-	import unsafe "unsafe"
-	type "unsafe".Pointer *any
-	type "âš›sdl".Surface struct { cSurface *"âš›sdl"._Ctypedef_SDL_Surface; mutex "sync".RWMutex; Flags uint32; Format *"âš›sdl".PixelFormat; W int32; H int32; Pitch uint16; Pixels "unsafe".Pointer; Offset int32 }
-	func (dst *"âš›sdl".Surface) Blit (dstrect *"âš›sdl".Rect, src *"âš›sdl".Surface, srcrect *"âš›sdl".Rect) int
-	func (s *"âš›sdl".Surface) DisplayFormat () *"âš›sdl".Surface
-	func (dst *"âš›sdl".Surface) FillRect (dstrect *"âš›sdl".Rect, color uint32) int
-	func (screen *"âš›sdl".Surface) Flip () int
-	func (screen *"âš›sdl".Surface) Free ()
-	func (s *"âš›sdl".Surface) GetClipRect (r *"âš›sdl".Rect)
-	func (screen *"âš›sdl".Surface) Lock () int
-	func (s *"âš›sdl".Surface) SetAlpha (flags uint32, alpha uint8) int
-	func (s *"âš›sdl".Surface) SetCSurface (cSurface "unsafe".Pointer)
-	func (s *"âš›sdl".Surface) SetClipRect (r *"âš›sdl".Rect)
-	func (s *"âš›sdl".Surface) SetColorKey (flags uint32, ColorKey uint32) int
-	func (screen *"âš›sdl".Surface) Unlock ()
-	func (screen *"âš›sdl".Surface) UpdateRect (x int32, y int32, w uint32, h uint32)
-	func (screen *"âš›sdl".Surface) UpdateRects (rects []"âš›sdl".Rect)
-	func (s *"âš›sdl".Surface) destroy ()
-	func (s *"âš›sdl".Surface) reload ()
-	type "âš›sdl"._Ctypedef_SDL_Surface struct { flags "âš›sdl"._Ctypedef_Uint32; format *"âš›sdl"._Ctypedef_SDL_PixelFormat; w "âš›sdl"._Ctype_int; h "âš›sdl"._Ctype_int; pitch "âš›sdl"._Ctypedef_Uint16; _ [2]uint8; pixels "unsafe".Pointer; offset "âš›sdl"._Ctype_int; hwdata *"âš›sdl"._Ctype_struct_private_hwdata; clip_rect "âš›sdl"._Ctypedef_SDL_Rect; unused1 "âš›sdl"._Ctypedef_Uint32; locked "âš›sdl"._Ctypedef_Uint32; _map *"âš›sdl"._Ctype_struct_SDL_BlitMap; format_version "âš›sdl"._Ctype_uint; refcount "âš›sdl"._Ctype_int }
-	type "âš›sdl"._Ctypedef_Uint32 uint32
-	type "âš›sdl"._Ctypedef_SDL_PixelFormat struct { palette *"âš›sdl"._Ctypedef_SDL_Palette; BitsPerPixel "âš›sdl"._Ctypedef_Uint8; BytesPerPixel "âš›sdl"._Ctypedef_Uint8; Rloss "âš›sdl"._Ctypedef_Uint8; Gloss "âš›sdl"._Ctypedef_Uint8; Bloss "âš›sdl"._Ctypedef_Uint8; Aloss "âš›sdl"._Ctypedef_Uint8; Rshift "âš›sdl"._Ctypedef_Uint8; Gshift "âš›sdl"._Ctypedef_Uint8; Bshift "âš›sdl"._Ctypedef_Uint8; Ashift "âš›sdl"._Ctypedef_Uint8; _ [2]uint8; Rmask "âš›sdl"._Ctypedef_Uint32; Gmask "âš›sdl"._Ctypedef_Uint32; Bmask "âš›sdl"._Ctypedef_Uint32; Amask "âš›sdl"._Ctypedef_Uint32; colorkey "âš›sdl"._Ctypedef_Uint32; alpha "âš›sdl"._Ctypedef_Uint8; _ [3]uint8 }
-	type "âš›sdl"._Ctypedef_SDL_Palette struct { ncolors "âš›sdl"._Ctype_int; colors *"âš›sdl"._Ctypedef_SDL_Color }
-	type "âš›sdl"._Ctype_int int32
-	type "âš›sdl"._Ctypedef_SDL_Color struct { r "âš›sdl"._Ctypedef_Uint8; g "âš›sdl"._Ctypedef_Uint8; b "âš›sdl"._Ctypedef_Uint8; unused "âš›sdl"._Ctypedef_Uint8 }
-	type "âš›sdl"._Ctypedef_Uint8 uint8
-	type "âš›sdl"._Ctypedef_Uint16 uint16
-	type "âš›sdl"._Ctype_struct_private_hwdata struct { }
-	type "âš›sdl"._Ctypedef_SDL_Rect struct { x "âš›sdl"._Ctypedef_Sint16; y "âš›sdl"._Ctypedef_Sint16; w "âš›sdl"._Ctypedef_Uint16; h "âš›sdl"._Ctypedef_Uint16 }
-	type "âš›sdl"._Ctypedef_Sint16 int16
-	type "âš›sdl"._Ctype_struct_SDL_BlitMap struct { }
-	type "âš›sdl"._Ctype_uint uint32
-	import sync "sync"
-	type "sync".RWMutex struct { w "sync".Mutex; r "sync".Mutex; readerCount uint32 }
-	func (rw *"sync".RWMutex) Lock ()
-	func (rw *"sync".RWMutex) RLock ()
-	func (rw *"sync".RWMutex) RUnlock ()
-	func (rw *"sync".RWMutex) Unlock ()
-	type "sync".Mutex struct { key uint32; sema uint32 }
-	func (m *"sync".Mutex) Lock ()
-	func (m *"sync".Mutex) Unlock ()
-	type "âš›sdl".PixelFormat struct { Palette *"âš›sdl".Palette; BitsPerPixel uint8; BytesPerPixel uint8; Rloss uint8; Gloss uint8; Bloss uint8; Aloss uint8; Rshift uint8; Gshift uint8; Bshift uint8; Ashift uint8; Pad0 [2]uint8; Rmask uint32; Gmask uint32; Bmask uint32; Amask uint32; Colorkey uint32; Alpha uint8; Pad1 [3]uint8 }
-	type "âš›sdl".Palette struct { Ncolors int32; Colors *"âš›sdl".Color }
-	type "âš›sdl".Color struct { R uint8; G uint8; B uint8; Unused uint8 }
-	import ttf "âš›sdl/ttf"
-	type "âš›sdl/ttf".Font struct { cfont *[0]uint8 }
-	func (f *"âš›sdl/ttf".Font) Ascent () int
-	func (f *"âš›sdl/ttf".Font) Close ()
-	func (f *"âš›sdl/ttf".Font) Descent () int
-	func (f *"âš›sdl/ttf".Font) Faces () int
-	func (f *"âš›sdl/ttf".Font) FamilyName () string
-	func (f *"âš›sdl/ttf".Font) GetStyle () int
-	func (f *"âš›sdl/ttf".Font) GlyphMetrics (ch uint16) (? int, ? int, ? int, ? int, ? int, ? int)
-	func (f *"âš›sdl/ttf".Font) Height () int
-	func (f *"âš›sdl/ttf".Font) IsFixedWidth () int
-	func (f *"âš›sdl/ttf".Font) LineSkip () int
-	func (f *"âš›sdl/ttf".Font) SetStyle (style int)
-	func (f *"âš›sdl/ttf".Font) SizeText (text string) (? int, ? int, ? int)
-	func (f *"âš›sdl/ttf".Font) SizeUTF8 (text string) (? int, ? int, ? int)
-	func (f *"âš›sdl/ttf".Font) StyleName () string
-	type "console".SDLRenderer struct { surface *"âš›sdl".Surface; console *"console".Console; width uint16; height uint16; promptLineRect *"âš›sdl".Rect; font *"âš›sdl/ttf".Font }
-	func (renderer *"console".SDLRenderer) GetSurface () *"âš›sdl".Surface
-	func (renderer *"console".SDLRenderer) Init (console *"console".Console)
-	func (renderer *"console".SDLRenderer) SetFont (font *"âš›sdl/ttf".Font)
-	func (renderer *"console".SDLRenderer) Update ()
-	var "".sdlrenderer *"console".SDLRenderer
-	var "".appSurface *"âš›sdl".Surface
-	var "".gopher *"âš›sdl".Surface
-	func "".render ()
-	import prettytest "spectrum/prettytest"
-	type "spectrum/prettytest".callerInfo struct { name string; fn string; line int }
-	type "spectrum/prettytest".T struct { T *"testing".T; Status uint8; LastStatus uint8; Dry bool; callerInfo *"spectrum/prettytest".callerInfo }
-	func (assertion *"spectrum/prettytest".T) Equal (exp interface { }, act interface { })
-	func (assertion *"spectrum/prettytest".T) Failed () bool
-	func (assertion *"spectrum/prettytest".T) False (value bool)
-	func (assertion *"spectrum/prettytest".T) Nil (value interface { })
-	func (assertion *"spectrum/prettytest".T) NotNil (value interface { })
-	func (assertion *"spectrum/prettytest".T) Path (path string)
-	func (assertion *"spectrum/prettytest".T) Pending ()
-	func (assertion *"spectrum/prettytest".T) TestFailed () bool
-	func (assertion *"spectrum/prettytest".T) True (value bool)
-	func (assertion *"spectrum/prettytest".T) fail (exp interface { }, act interface { }, info *"spectrum/prettytest".callerInfo)
-	func (assertion *"spectrum/prettytest".T) failWithCustomMsg (msg string, info *"spectrum/prettytest".callerInfo)
-	func (assertion *"spectrum/prettytest".T) setup ()
-	import testing "testing"
-	type "testing".T struct { errors string; failed bool; ch chan *"testing".T }
-	func (t *"testing".T) Error (args ...interface { })
-	func (t *"testing".T) Errorf (format string, args ...interface { })
-	func (t *"testing".T) Fail ()
-	func (t *"testing".T) FailNow ()
-	func (t *"testing".T) Failed () bool
-	func (t *"testing".T) Fatal (args ...interface { })
-	func (t *"testing".T) Fatalf (format string, args ...interface { })
-	func (t *"testing".T) Log (args ...interface { })
-	func (t *"testing".T) Logf (format string, args ...interface { })
-	func "".before (t *"spectrum/prettytest".T)
-	func "".after (t *"spectrum/prettytest".T)
-	func "".should_receive_chars (t *"spectrum/prettytest".T)
-	func "".should_receive_return (t *"spectrum/prettytest".T)
-	func "".TestConsoleSpecs (t *"testing".T)
-	var "".initdoneÂ· uint8
-	func "".InitÂ· ()
-
-$$  // local types
-
-$$
-
-!
-~ E</ ~ E<home ~ E<andrea ~ E<src ~ E<console ~ E<specs ~ E<specs.go 7      ~ E<âš›sdl.a 7     ÿÿÿÿA~ E<âš›sdl ~ E<ttf.a 7     ÿÿÿÿA~ E<spectrum ~ E<prettytest.a 7     ÿÿÿÿA~ E<console.a 7     ÿÿÿÿA7 8     ~ E</ ~ E<home ~ E<andrea ~ E<src ~ E<console ~ E<specs ~ E<console_spec_test.go 7 8     ~ E<testing.a 7 ;    ÿÿÿÿA~ E<spectrum ~ E<prettytest.a 7 <    ÿÿÿÿA~ E<time.a 7 =    ÿÿÿÿA7 |     ~ ="".render ~ =type.func() Ü    ‘=P   Ap       AS~ =runtime.new ~ =type.func(int32) *%e2%9a%9bsdl.Rect      ‘=p       Sq    AOp    		       A	q    APp    		       A	q    €  APp    		       A	q    à  AP~ ="".appSurface ~ =type.*%e2%9a%9bsdl.Surface p    ‘=~ S%e2%9a%9bsdl.dst p    S~ S%e2%9a%9bsdl.dstrect p       S~ S	%e2%9a%9bsdl.color p    A   	S~ =
-%e2%9a%9bsdl.*SurfaceÂ·FillRect      
-=p       AS     ‘=p       Sq    AOp    		       A	q    APp    		       A	q    APp    		       A	q    APp    ‘=p    Sp       S~ ="".gopher p    ‘=~ S%e2%9a%9bsdl.src p       S~ S%e2%9a%9bsdl.srcrect p    A   S~ =%e2%9a%9bsdl.*SurfaceÂ·Blit      =p       AS     ‘=p       Sq    AOp    		       A	q    APp    		       A	q    AP~ ?"".autotmp_0002 p    ôÿÿÿ?	       Aq    AO~ ="".sdlrenderer ~ =type.*console.SDLRenderer p    ‘=~ Sconsole.renderer p    S~ =console.*SDLRendererÂ·GetSurface      =p       Sp       Sp    ‘=p    Sp    ôÿÿÿ?p       Sp    A   S     =p    ‘=~ S%e2%9a%9bsdl.screen p    S~ =%e2%9a%9bsdl.*SurfaceÂ·Flip      =£      ~ ="".before ~ =type.func(*spectrum/prettytest.T) Ü    ‘=E„      AW     F   <W     a   <~ S%e2%9a%9bsdl.flags p        AS~ =%e2%9a%9bsdl.Init ~ =type.func(uint32) int      ‘=p       S&    AO     E   <~ =%e2%9a%9bsdl.GetError ~ =type.func() string      ‘=a    Sp    p    ~ Sruntime.elem a       SÐ      	       A	       Ap       A	¡      y      !      ~ =type.string ~ =type.uint8 ~ S runtime.typ p    “= D S~ =!runtime.convT2E ~ ="type.func(*uint8, string) interface { }      ‘!="a       Sp    a    S!      y      y      ~ =#runtime.panic ~ =$type.func(interface { })      ‘#=$W     a   <W     c   <W     }   <~ =%%e2%9a%9bsdl/ttf.Init ~ =&type.func() int      ‘%=&p    S&    AO     b   <     ‘=a    Sp    p    a       SÐ      	       A	       Ap       A	¡      y      !      p    “= D S     ‘!="a       Sp    a    S!      y      y           ‘#=$W     }   <~ ='go.string."../testdata/fontin_sans.otf" a     '=~ S(%e2%9a%9bsdl/ttf.file a     (S!       y       y       ~ S)%e2%9a%9bsdl/ttf.ptsize p        A   )S~ =*%e2%9a%9bsdl/ttf.OpenFont ~ =+type.func(string, int) *%e2%9a%9bsdl/ttf.Font       ‘*=+p        SW "    ‡   <W "        <~ ?,"".font ~ =-type.*%e2%9a%9bsdl/ttf.Font p "   •üÿÿÿ,?-& "   AX "    †   < #    ‘=a #   Sp #   p #   a #      SÐ #     	 #      A	 #      Ap #      A	¡ #     y #     ! #     p #   “= D S #    ‘!="a #      Sp #   a #   S! #     y #     y #      #    ‘#=$W "        <~ S.%e2%9a%9bsdl.w p &   €  A.S~ S/%e2%9a%9bsdl.h p &   à  A   /S~ S0%e2%9a%9bsdl.bpp p &       A   0Sp &   A   S~ =1%e2%9a%9bsdl.SetVideoMode ~ =type.func(int, int, int, uint32) *%e2%9a%9bsdl.Surface  &    ‘1=p &      Sp &   ‘=~ =go.string."../testdata/gopher.png" a '   =~ S%e2%9a%9bsdl.file a '   S! '     y '     y '     ~ =%e2%9a%9bsdl.Load ~ =type.func(string) *%e2%9a%9bsdl.Surface  '    ‘=p '      Sp '   ‘=p )      AS~ S%e2%9a%9bsdl.width p )   €  A   S~ S%e2%9a%9bsdl.height p )   à  A   Sp )       A   0S~ S"".Rmask p )   A   S~ S	"".Gmask p )   A   	S~ S
-"".Bmask p )   A   
-S~ S"".Amask p )   A   S~ =%e2%9a%9bsdl.CreateRGBSurface ~ =type.func(uint32, int, int, int, uint32, uint32, uint32, uint32) *%e2%9a%9bsdl.Surface  )    ‘=p )       S~ Sconsole.surface p )   S~ =console.NewSDLRenderer ~ =type.func(*%e2%9a%9bsdl.Surface) *console.SDLRenderer  )    ‘=p )      S~ ="".sdlrenderer ~ =type.*console.SDLRenderer p *   ‘=~ Sconsole.renderer p *   S~ =console.*SDLRendererÂ·GetSurface  *    =p *      S~ S%e2%9a%9bsdl.s p *   Sp *      A   S~ S%e2%9a%9bsdl.alpha o *   ª   A   S~ =%e2%9a%9bsdl.*SurfaceÂ·SetAlpha  *    =p ,   ‘=p ,   Sp ,   •üÿÿÿ,?-~ Sconsole.font p ,      S~ =console.*SDLRendererÂ·SetFont  ,    =p -   “= D S~ =type.console.Renderer ~ Sruntime.typ2 p -   “= D   Sp -   ‘=p -      S~ =runtime.convT2I ~ =type.func(*uint8, *uint8, *console.SDLRenderer) console.Renderer  -    ‘=a -      Sp -   a -   S! -     y -     y -     ~ =console.NewConsole ~ =type.func(console.Renderer) *console.Console  -    ‘=p -      S~ = "".console ~ =!type.*console.Console p .   ‘ =!~ S"console.console p .   "S~ =#go.string."console>" a .   #=~ S$console.prompt a .      $S! .     y .     y .     ~ =%console.*ConsoleÂ·SetPrompt  .    %=p /   ‘=p /   Sp /   ‘ =!p /      "S~ =&console.*SDLRendererÂ·Init  /    &=~ ='"".render ~ =(type.func()  1    ‘'=(£ 2     ~ =)"".after ~ =*type.func(*spectrum/prettytest.T) Ü 4   ‘)=*A   A~ =+%e2%9a%9bsdl.Quit  5    ‘+=(£ 6     ~ =,"".should_receive_chars Ü @   ‘,=*E\      A~ =-go.string."Hello gopher!" a A   -=~ ?."".str ~ =/type.string a A   •ðÿÿÿ.?/! A     y A     y A     ~ ?0"".count ~ =1type.int p B   A•ìÿÿÿ0?1~ Stime.ns p C    áõASp C   A   S~ =time.NewTicker ~ =type.func(int64) *time.Ticker  C    ‘=p C      S~ ?"".ticker ~ =type.*time.Ticker p C   •èÿÿÿ?W E    ö   <W E    7  <W N    ø   <W N    6  <~ Sruntime.size p N      AS~ =runtime.newselect ~ =type.func(int) *uint8  N    ‘=p N      SW N    ý   <W N    3  <~ ?	"".autotmp_0038 p N   üÿÿÿ	?~ S
-runtime.sel p N   
-Sp N   •èÿÿÿ?~ ?"".autotmp_0042 p N   Üÿÿÿ?p N   Üÿÿÿ?p N   T~ Sruntime.hchan p N      S~ Sruntime.elem p N   A   So N   A   S~ =runtime.selectrecv ~ =type.func(*uint8, <-chan int64, *int64) bool  N    ‘=o N      S% N   AO N    ü   <W H      <W H      <p H   •ôÿÿÿ.?/	p H   •ìÿÿÿ0?1& H   	X H      <W I    7  <W H      <p K   ‘ =!p K   "S~ =console.*ConsoleÂ·CharCh  K    =p K      S~ ?"".autotmp_0039 p K   øÿÿÿ?a K   •ðÿÿÿ.?/p K   •ìÿÿÿ0?1& K      RM K      <~ =runtime.panicindex  K    =p K   Ra K   Ro K   Ro K   o K   s K   p K   A	p K   Sp K   	   S~ =runtime.intstring ~ =type.func(int64) string  K    ‘=a K      Sp K   a K      S! K     y K     y K     p K   øÿÿÿ?p K   S~ =runtime.chansend1 ~ =type.func(chan<- string, string)  K    ‘=C L    •ìÿÿÿ0?1 M    ‘'=(W N    ÷   <W N    3  <p N   üÿÿÿ	?p N   
-S~ =runtime.selectgo ~ =type.func(*uint8)  N    ‘=W E    ö   <~ @"".t ~ =type.*spectrum/prettytest.T p R   ‘@~ Sspectrum/prettytest.assertion p R   S~ Sspectrum/prettytest.value o R      A   S~ =spectrum/prettytest.*TÂ·True  R    =£ S     ~ ="".should_receive_return Ü U   ‘=*E\      Aa V   -=a V   •ðÿÿÿ.?/! V     y V     y V     p W   A•ìÿÿÿ0?1p X    áõASp X   A   S X    ‘=p X      Sp X   •èÿÿÿ?W Z    J  <W Z    ‹  <W c    L  <W c    Š  <p c      AS c    ‘=p c      SW c    Q  <W c    ‡  <~ ?"".autotmp_0052 p c   üÿÿÿ?p c   
-Sp c   •èÿÿÿ?~ ? "".autotmp_0056 p c   Üÿÿÿ ?p c   Üÿÿÿ ?p c   Tp c      Sp c   A   So c   A   S c    ‘=~ =!"".console ~ ="type.*console.Console p c   ‘!="
-o c      S% c   AO c    P  <W ]    a  <W ]    g  <p ]   •ôÿÿÿ.?/	p ]   •ìÿÿÿ0?1& ]   	X ]    `  <W ^    ‹  <W ]    g  <~ S#console.console p `   
-#S `    =p `      S~ ?$"".autotmp_0053 p `   øÿÿÿ$?a `   •ðÿÿÿ.?/p `   •ìÿÿÿ0?1& `      RM `    p  < `    =p `   Ra `   Ro `   Ro `   o `   s `   p `   A	p `   Sp `   	   S `    ‘=a `      Sp `   a `      S! `     y `     y `     p `   øÿÿÿ$?p `   S `    ‘=C a    •ìÿÿÿ0?1 b    ‘'=(W c    K  <W c    ‡  <p c   üÿÿÿ?p c   
-S c    ‘=W Z    J  <p g   
-#S~ =%console.*ConsoleÂ·ReturnCh  g    %=p g      Sp g   So g      A   S~ =&type.func(chan<- bool, bool)  g    ‘=&p h   ‘!="p h   #S h    %=p h      Sp h   So h      A   S h    ‘=&p i   ‘!="p i   #S i    %=p i      Sp i   So i      A   S i    ‘=& k    ‘'=(W m    ¢  <W m    £  <W m    ¢  <p n   ‘@p n   So n      A   S n    =£ o     ~ ='"".TestConsoleSpecs ~ =(type.func(*testing.T) Ü q   ‘'=(EP      Ap z      AS~ =)runtime.new ~ =*type.func(int32) *[3]func(*spectrum/prettytest.T)  z    ‘)=*p z      S~ ?+"".autotmp_0066 p z      Aøÿÿÿ+?p z      Aüÿÿÿ+?p z   ôÿÿÿ+?a z   ôÿÿÿ+?p z   R	 z   A~ =,type.func(*spectrum/prettytest.T) p z   “= D,p z   Ra z   ôÿÿÿ+?p z   R	 z      A~ =-"".before p z   “= -D,p z   Ra z   ôÿÿÿ+?p z   R	 z      A~ =."".after p z   “= .D,p z   R~ =/type.*testing.T p z   ‘@/~ S0spectrum/prettytest.t p z   0S~ =1go.string."Console" a z   1=~ Sspectrum/prettytest.description a z      S! z     y z     y z     a z   ôÿÿÿ+?~ Sspectrum/prettytest.tests a z      S! z     y z     y z     y z     ~ =spectrum/prettytest.Describe ~ =type.func(*testing.T, string, ...func(*spectrum/prettytest.T))  z    ‘=£ {     ~ ="".InitÂ· ~ =type.func() Ü {   ‘=   A~ ="".initdoneÂ· ~ =type.uint8 o {   ‘=	W {    Ñ  <W {    ß  <o {   	o {   % {   AO {    Ð  <W {    ×  <W {    Ý  <o {   	o {   % {      AX {    Ö  <£ {     W {    Ý  <~ =	runtime.throwinit  {    ‘	=W {    ß  <o {      A‘=~ =
-time.InitÂ·  {    ‘
-=~ =testing.InitÂ·  {    ‘=~ =console.InitÂ·  {    ‘=~ =spectrum/prettytest.InitÂ·  {    ‘=~ =%e2%9a%9bsdl/ttf.InitÂ·  {    ‘=~ =%e2%9a%9bsdl.InitÂ·  {    ‘=o {      A‘=£ {     £ {     5    ‘!="   A~ ="".sdlrenderer ~ =type.*console.SDLRenderer 5    ‘=   A~ ="".appSurface ~ =type.*%e2%9a%9bsdl.Surface 5    ‘=   A~ ="".gopher 5    ‘=   A5 {   ‘=   A~ =type.*runtime.FuncType - {   ;== D- {   ;   ==    D- {   ;   =   A- {   ;   =ö¼‚öA- {   ;   =   A- {   ;   =   A- {   ;   =   A- {   ;   =   A~ =go.string."func()" - {   ;   == D- {   ;   =A- {   ;   =A- {   ;    == 8   D- {   ;$   =A- {   ;(   =A- {   ;,   == 8   D- {   ;0   =A- {   ;4   =A5 {   ;
-=8   A~ =type.func(int32) *%e2%9a%9bsdl.Rect - {   ;== D- {   ;   ==    D- {   ;   =   A- {   ;   =Ž£êlA- {   ;   =   A- {   ;   =   A- {   ;   =   A- {   ;   =   A~ =go.string."func(int32) *sdl.Rect" - {   ;   == D- {   ;   =A- {   ;   =A- {   ;    == 8   D- {   ;$   =   A- {   ;(   =   A- {   ;,   == <   D- {   ;0   =   A- {   ;4   =   A~ =type.int32 - {   ;8   == D~ =type.*%e2%9a%9bsdl.Rect - {   ;<   == D5 {   ;
-=@   A- {   ;,== D- {   ;   ,==    ,D- {   ;   ,=   A- {   ;   ,=@¦ÜA- {   ;   ,=   A- {   ;   ,=   A- {   ;   ,=   A- {   ;   ,=   A~ =go.string."func(*prettytest.T)" - {   ;   ,== D- {   ;   ,=A- {   ;   ,=A- {   ;    ,== 8   ,D- {   ;$   ,=   A- {   ;(   ,=   A- {   ;,   ,== <   ,D- {   ;0   ,=A- {   ;4   ,=A~ =type.*spectrum/prettytest.T - {   ;8   ,== D5 {   ;
-,=<   A~ =type.func(uint32) int - {   ;== D- {   ;   ==    D- {   ;   =   A- {   ;   =sîA- {   ;   =   A- {   ;   =   A- {   ;   =   A- {   ;   =   A~ =go.string."func(uint32) int" - {   ;   == D- {   ;   =A- {   ;   =A- {   ;    == 8   D- {   ;$   =   A- {   ;(   =   A- {   ;,   == <   D- {   ;0   =   A- {   ;4   =   A~ =type.uint32 - {   ;8   == D~ = type.int - {   ;<   ==  D5 {   ;
-=@   A~ =!type.func() string - {   ;!== D- {   ;   !==    !D- {   ;   !=   A- {   ;   !=¢mËA- {   ;   !=   A- {   ;   !=   A- {   ;   !=   A- {   ;   !=   A~ ="go.string."func() string" - {   ;   !== "D- {   ;   !=A- {   ;   !=A- {   ;    !== 8   !D- {   ;$   !=A- {   ;(   !=A- {   ;,   !== 8   !D- {   ;0   !=   A- {   ;4   !=   A~ =#type.string - {   ;8   !== #D5 {   ;
-!=<   A~ =$type.interface { } ~ =%type.*runtime.InterfaceType - {   ;$== %D- {   ;   $==    $D- {   ;   $=   A- {   ;   $=ô¤BóA- {   ;   $=   A- {   ;   $=   A- {   ;   $=   A- {   ;   $=   A~ =&go.string."interface { }" - {   ;   $== &D- {   ;   $=A- {   ;   $== (   $D- {   ;    $=A- {   ;$   $=A5 {   ;
-$=(   A~ ='type.func(*uint8, string) interface { } - {   ;'== D- {   ;   '==    'D- {   ;   '=   A- {   ;   '=ï¤)¤A- {   ;   '=   A- {   ;   '=   A- {   ;   '=   A- {   ;   '=   A~ =(go.string."func(*uint8, string) interface { }" - {   ;   '== (D- {   ;   '=A- {   ;   '=A- {   ;    '== 8   'D- {   ;$   '=   A- {   ;(   '=   A- {   ;,   '== @   'D- {   ;0   '=   A- {   ;4   '=   A~ =)type.*uint8 - {   ;8   '== )D- {   ;<   '== #D- {   ;@   '== $D5 {   ;
-'=D   A~ =*type.func(interface { }) - {   ;*== D- {   ;   *==    *D- {   ;   *=   A- {   ;   *=§€’·A- {   ;   *=   A- {   ;   *=   A- {   ;   *=   A- {   ;   *=   A~ =+go.string."func(interface { })" - {   ;   *== +D- {   ;   *=A- {   ;   *=A- {   ;    *== 8   *D- {   ;$   *=   A- {   ;(   *=   A- {   ;,   *== <   *D- {   ;0   *=A- {   ;4   *=A- {   ;8   *== $D5 {   ;
-*=<   A~ =,type.func() int - {   ;,== D- {   ;   ,==    ,D- {   ;   ,=   A- {   ;   ,=å†9àA- {   ;   ,=   A- {   ;   ,=   A- {   ;   ,=   A- {   ;   ,=   A~ =-go.string."func() int" - {   ;   ,== -D- {   ;   ,=A- {   ;   ,=A- {   ;    ,== 8   ,D- {   ;$   ,=A- {   ;(   ,=A- {   ;,   ,== 8   ,D- {   ;0   ,=   A- {   ;4   ,=   A- {   ;8   ,==  D5 {   ;
-,=<   A~ =.type.func(string, int) *%e2%9a%9bsdl/ttf.Font - {   ;.== D- {   ;   .==    .D- {   ;   .=   A- {   ;   .=¸½jA- {   ;   .=   A- {   ;   .=   A- {   ;   .=   A- {   ;   .=   A~ =/go.string."func(string, int) *ttf.Font" - {   ;   .== /D- {   ;   .=A- {   ;   .=A- {   ;    .== 8   .D- {   ;$   .=   A- {   ;(   .=   A- {   ;,   .== @   .D- {   ;0   .=   A- {   ;4   .=   A- {   ;8   .== #D- {   ;<   .==  D~ =0type.*%e2%9a%9bsdl/ttf.Font - {   ;@   .== 0D5 {   ;
-.=D   A~ =1type.func(int, int, int, uint32) *%e2%9a%9bsdl.Surface - {   ;1== D- {   ;   1==    1D- {   ;   1=   A- {   ;   1=NxæuA- {   ;   1=   A- {   ;   1=   A- {   ;   1=   A- {   ;   1=   A~ =go.string."func(int, int, int, uint32) *sdl.Surface" - {   ;   1== D- {   ;   1=A- {   ;   1=A- {   ;    1== 8   1D- {   ;$   1=   A- {   ;(   1=   A- {   ;,   1== H   1D- {   ;0   1=   A- {   ;4   1=   A- {   ;8   1==  D- {   ;<   1==  D- {   ;@   1==  D- {   ;D   1== D- {   ;H   1== D5 {   ;
-1=L   A~ =type.func(string) *%e2%9a%9bsdl.Surface - {   ;== D- {   ;   ==    D- {   ;   =   A- {   ;   =è•/WA- {   ;   =   A- {   ;   =   A- {   ;   =   A- {   ;   =   A~ =go.string."func(string) *sdl.Surface" - {   ;   == D- {   ;   =A- {   ;   =A- {   ;    == 8   D- {   ;$   =   A- {   ;(   =   A- {   ;,   == <   D- {   ;0   =   A- {   ;4   =   A- {   ;8   == #D- {   ;<   == D5 {   ;
-=@   A~ =type.func(uint32, int, int, int, uint32, uint32, uint32, uint32) *%e2%9a%9bsdl.Surface - {   ;== D- {   ;   ==    D- {   ;   =   A- {   ;   =m¢²A- {   ;   =   A- {   ;   =   A- {   ;   =   A- {   ;   =   A~ =go.string."func(uint32, int, int, int, uint32, uint32, uint32, uint32) *sdl.Surface" - {   ;   == D- {   ;   =A- {   ;   =A- {   ;    == 8   D- {   ;$   =   A- {   ;(   =   A- {   ;,   == X   D- {   ;0   =   A- {   ;4   =   A- {   ;8   == D- {   ;<   ==  D- {   ;@   ==  D- {   ;D   ==  D- {   ;H   == D- {   ;L   == D- {   ;P   == D- {   ;T   == D- {   ;X   == D5 {   ;
-=\   A~ =type.func(*%e2%9a%9bsdl.Surface) *console.SDLRenderer - {   ;== D- {   ;   ==    D- {   ;   =   A- {   ;   =i5ÈA- {   ;   =   A- {   ;   =   A- {   ;   =   A- {   ;   =   A~ =go.string."func(*sdl.Surface) *console.SDLRenderer" - {   ;   == D- {   ;   =A- {   ;   =A- {   ;    == 8   D- {   ;$   =   A- {   ;(   =   A- {   ;,   == <   D- {   ;0   =   A- {   ;4   =   A- {   ;8   == D- {   ;<   == D5 {   ;
-=@   A~ =type.func(*uint8, *uint8, *console.SDLRenderer) console.Renderer - {   ;== D- {   ;   ==    D- {   ;   =   A- {   ;   =w$ËA- {   ;   =   A- {   ;   =   A- {   ;   =   A- {   ;   =   A~ =	go.string."func(*uint8, *uint8, *console.SDLRenderer) console.Renderer" - {   ;   == 	D- {   ;   =A- {   ;   =A- {   ;    == 8   D- {   ;$   =   A- {   ;(   =   A- {   ;,   == D   D- {   ;0   =   A- {   ;4   =   A- {   ;8   == )D- {   ;<   == )D- {   ;@   == D~ =
-type.console.Renderer - {   ;D   == 
-D5 {   ;
-=H   A~ =type.func(console.Renderer) *console.Console - {   ;== D- {   ;   ==    D- {   ;   =   A- {   ;   =È®…A- {   ;   =   A- {   ;   =   A- {   ;   =   A- {   ;   =   A~ =go.string."func(console.Renderer) *console.Console" - {   ;   == D- {   ;   =A- {   ;   =A- {   ;    == 8   D- {   ;$   =   A- {   ;(   =   A- {   ;,   == <   D- {   ;0   =   A- {   ;4   =   A- {   ;8   == 
-D~ =type.*console.Console - {   ;<   == D5 {   ;
-=@   A~ =type.func(int64) *time.Ticker - {   ;== D- {   ;   ==    D- {   ;   =   A- {   ;   =…Å"A- {   ;   =   A- {   ;   =   A- {   ;   =   A- {   ;   =   A~ =go.string."func(int64) *time.Ticker" - {   ;   == D- {   ;   =A- {   ;   =A- {   ;    == 8   D- {   ;$   =   A- {   ;(   =   A- {   ;,   == <   D- {   ;0   =   A- {   ;4   =   A~ =type.int64 - {   ;8   == D~ =type.*time.Ticker - {   ;<   == D5 {   ;
-=@   A~ =type.func(int) *uint8 - {   ;== D- {   ;   ==    D- {   ;   =   A- {   ;   =ÏéA- {   ;   =   A- {   ;   =   A- {   ;   =   A- {   ;   =   A~ =go.string."func(int) *uint8" - {   ;   == D- {   ;   =A- {   ;   =A- {   ;    == 8   D- {   ;$   =   A- {   ;(   =   A- {   ;,   == <   D- {   ;0   =   A- {   ;4   =   A- {   ;8   ==  D- {   ;<   == )D5 {   ;
-=@   A~ =type.<-chan int64 ~ =type.*runtime.ChanType - {   ;== D- {   ;   ==    D- {   ;   =   A- {   ;   ="ótA- {   ;   =   A- {   ;   =   A- {   ;   =   A- {   ;   =   A~ =go.string."<-chan int64" - {   ;   == D- {   ;   =A- {   ;   == D- {   ;    =   A5 {   ;
-=$   A~ =type.func(*uint8, <-chan int64, *int64) bool ~ =type.*runtime.FuncType - {   ;== D- {   ;   ==    D- {   ;   =   A- {   ;   =ì=ŽA- {   ;   =   A- {   ;   =   A- {   ;   =   A- {   ;   =   A~ =go.string."func(*uint8, <-chan int64, *int64) bool" - {   ;   == D- {   ;   =A- {   ;   =A- {   ;    == 8   D- {   ;$   =   A- {   ;(   =   A- {   ;,   == D   D- {   ;0   =   A- {   ;4   =   A- {   ;8   == )D- {   ;<   == D~ =type.*int64 - {   ;@   == D~ =type.bool - {   ;D   == D5 {   ;
-=H   A~ =type.func(int64) string - {   ;== D- {   ;   ==    D- {   ;   =   A- {   ;   =ú4\àA- {   ;   =   A- {   ;   =   A- {   ;   =   A- {   ;   =   A~ =go.string."func(int64) string" - {   ;   == D- {   ;   =A- {   ;   =A- {   ;    == 8   D- {   ;$   =   A- {   ;(   =   A- {   ;,   == <   D- {   ;0   =   A- {   ;4   =   A- {   ;8   == D- {   ;<   == #D5 {   ;
-=@   A~ =type.chan<- string - {   ;== D- {   ;   ==    D- {   ;   =   A- {   ;   ==uRÈA- {   ;   =   A- {   ;   =   A- {   ;   =   A- {   ;   =   A~ =go.string."chan<- string" - {   ;   == D- {   ;   =A- {   ;   == #D- {   ;    =   A5 {   ;
-=$   A~ = type.func(chan<- string, string) - {   ; == D- {   ;    ==     D- {   ;    =   A- {   ;    =ñxzŒA- {   ;    =   A- {   ;    =   A- {   ;    =   A- {   ;    =   A~ =!go.string."func(chan<- string, string)" - {   ;    == !D- {   ;    =A- {   ;    =A- {   ;     == 8    D- {   ;$    =   A- {   ;(    =   A- {   ;,    == @    D- {   ;0    =A- {   ;4    =A- {   ;8    == D- {   ;<    == #D5 {   ;
- =@   A~ ="type.func(*uint8) - {   ;"== D- {   ;   "==    "D- {   ;   "=   A- {   ;   "=¦æ^‘A- {   ;   "=   A- {   ;   "=   A- {   ;   "=   A- {   ;   "=   A~ =#go.string."func(*uint8)" - {   ;   "== #D- {   ;   "=A- {   ;   "=A- {   ;    "== 8   "D- {   ;$   "=   A- {   ;(   "=   A- {   ;,   "== <   "D- {   ;0   "=A- {   ;4   "=A- {   ;8   "== )D5 {   ;
-"=<   A~ =$type.chan<- bool - {   ;$== D- {   ;   $==    $D- {   ;   $=   A- {   ;   $=ÞC¢öA- {   ;   $=   A- {   ;   $=   A- {   ;   $=   A- {   ;   $=   A~ =%go.string."chan<- bool" - {   ;   $== %D- {   ;   $=A- {   ;   $== D- {   ;    $=   A5 {   ;
-$=$   A~ =&type.func(chan<- bool, bool) - {   ;&== D- {   ;   &==    &D- {   ;   &=   A- {   ;   &=ÐS­·A- {   ;   &=   A- {   ;   &=   A- {   ;   &=   A- {   ;   &=   A~ ='go.string."func(chan<- bool, bool)" - {   ;   &== 'D- {   ;   &=A- {   ;   &=A- {   ;    &== 8   &D- {   ;$   &=   A- {   ;(   &=   A- {   ;,   &== @   &D- {   ;0   &=A- {   ;4   &=A- {   ;8   &== $D- {   ;<   &== D5 {   ;
-&=@   A~ =(type.func(*testing.T) - {   ;(== D- {   ;   (==    (D- {   ;   (=   A- {   ;   (=!oeëA- {   ;   (=   A- {   ;   (=   A- {   ;   (=   A- {   ;   (=   A~ =)go.string."func(*testing.T)" - {   ;   (== )D- {   ;   (=A- {   ;   (=A- {   ;    (== 8   (D- {   ;$   (=   A- {   ;(   (=   A- {   ;,   (== <   (D- {   ;0   (=A- {   ;4   (=A~ =*type.*testing.T - {   ;8   (== *D5 {   ;
-(=<   A~ =+type.[3]func(*spectrum/prettytest.T) ~ =,type.*runtime.ArrayType - {   ;+== ,D- {   ;   +==    +D- {   ;   +=   A- {   ;   +=)ÂoàA- {   ;   +=   A- {   ;   +=   A- {   ;   +=   A- {   ;   +=   A~ =-go.string."[3]func(*prettytest.T)" - {   ;   +== -D- {   ;   +=A~ =.type.func(*spectrum/prettytest.T) - {   ;   +== .D- {   ;    +=   A5 {   ;
-+=$   A~ =/type.*[3]func(*spectrum/prettytest.T) ~ =0type.*runtime.PtrType - {   ;/== 0D- {   ;   /==    /D- {   ;   /=   A- {   ;   /=»´jšA- {   ;   /=   A- {   ;   /=   A- {   ;   /=   A- {   ;   /=   A~ =1go.string."*[3]func(*prettytest.T)" - {   ;   /== 1D- {   ;   /=A- {   ;   /== +D5 {   ;
-/=    A~ =type.func(int32) *[3]func(*spectrum/prettytest.T) - {   ;== D- {   ;   ==    D- {   ;   =   A- {   ;   =~öqA- {   ;   =   A- {   ;   =   A- {   ;   =   A- {   ;   =   A~ =go.string."func(int32) *[3]func(*prettytest.T)" - {   ;   == D- {   ;   =A- {   ;   =A- {   ;    == 8   D- {   ;$   =   A- {   ;(   =   A- {   ;,   == <   D- {   ;0   =   A- {   ;4   =   A~ =type.int32 - {   ;8   == D- {   ;<   == /D5 {   ;
-=@   A~ =type.[]func(*spectrum/prettytest.T) ~ =type.*runtime.SliceType - {   ;== D- {   ;   ==    D- {   ;   =   A- {   ;   =+eØ°A- {   ;   =   A- {   ;   =   A- {   ;   =   A- {   ;   =   A~ =go.string."[]func(*prettytest.T)" - {   ;   == D- {   ;   =A- {   ;   == .D- {   ;    =ÿÿÿÿA5 {   ;
-=$   A~ =type.func(*testing.T, string, ...func(*spectrum/prettytest.T)) - {   ;== D- {   ;   ==    D- {   ;   =   A- {   ;   =©wÊA- {   ;   =   A- {   ;   =   A- {   ;   =   A- {   ;   =   A~ =go.string."func(*testing.T, string, ...func(*prettytest.T))" - {   ;   == D- {   ;   =A- {   ;   =   A- {   ;    == 8   D- {   ;$   =   A- {   ;(   =   A- {   ;,   == D   D- {   ;0   =A- {   ;4   =A- {   ;8   == *D~ =	type.string - {   ;<   == 	D- {   ;@   == D5 {   ;
-=D   A~ =
-go.importpath.runtime. ~ =string."runtime" - {   ;
-== D- {   ;   
-=   A5 {   ;
-
-=   A~ =go.importpath.time. ~ =string."time" - {   ;== D- {   ;   =   A5 {   ;
-=   A~ =go.importpath.spectrum/prettytest. ~ =string."spectrum/prettytest" - {   ;== D- {   ;   =   A5 {   ;
-=   A~ =go.importpath.testing. ~ =string."testing" - {   ;== D- {   ;   =   A5 {   ;
-=   A~ =go.importpath.%e2%9a%9bsdl/ttf. ~ =string."âš›sdl/ttf" - {   ;== D- {   ;   =
-   A5 {   ;
-=   A~ =go.importpath.%e2%9a%9bsdl. ~ =string."âš›sdl" - {   ;== D- {   ;   =   A5 {   ;
-=   A~ =go.importpath.console. ~ =string."console" - {   ;== D- {   ;   =   A5 {   ;
-=   A~ =string."../testdata/fontin_sans.otf" -     ;= ../testd-     ;   = ata/font-     ;   = in_sans.-     ;   = otf     5     ;
-=   A~ =go.string."../testdata/fontin_sans.otf" -     ;== D-     ;   =   A5     ;
-=   A~ =string."../testdata/gopher.png" - '   ;= ../testd- '   ;   = ata/goph- '   ;   = er.png  5 '   ;
-=   A~ =go.string."../testdata/gopher.png" - '   ;== D- '   ;   =   A5 '   ;
-=   A~ =string."console>" - .   ;= console>- .   ;   =         5 .   ;
-=	   A~ =go.string."console>" - .   ;== D- .   ;   =   A5 .   ;
-=   A~ =string."Hello gopher!" - A   ;= Hello go- A   ;   = pher!   5 A   ;
-=   A~ =go.string."Hello gopher!" - A   ;== D- A   ;   =   A5 A   ;
-=   A~ = string."Console" - z   ; = Console 5 z   ;
- =   A~ =!go.string."Console" - z   ;!==  D- z   ;   !=   A5 z   ;
-!=   A~ ="string."func()" - {   ;"= func()  5 {   ;
-"=   A~ =#go.string."func()" - {   ;#== "D- {   ;   #=   A5 {   ;
-#=   A~ =$string."func(int32) *sdl.Rect" - {   ;$= func(int- {   ;   $= 32) *sdl- {   ;   $= .Rect   5 {   ;
-$=   A~ =%go.string."func(int32) *sdl.Rect" - {   ;%== $D- {   ;   %=   A5 {   ;
-%=   A~ =&string."func(*prettytest.T)" - {   ;&= func(*pr- {   ;   &= ettytest- {   ;   &= .T)     5 {   ;
-&=   A~ ='go.string."func(*prettytest.T)" - {   ;'== &D- {   ;   '=   A5 {   ;
-'=   A~ =(string."func(uint32) int" - {   ;(= func(uin- {   ;   (= t32) int- {   ;   (=         5 {   ;
-(=   A~ =)go.string."func(uint32) int" - {   ;)== (D- {   ;   )=   A5 {   ;
-)=   A~ =*string."func() string" - {   ;*= func() s- {   ;   *= tring   5 {   ;
-*=   A~ =+go.string."func() string" - {   ;+== *D- {   ;   +=   A5 {   ;
-+=   A~ =,string."interface { }" - {   ;,= interfac- {   ;   ,= e { }   5 {   ;
-,=   A~ =-go.string."interface { }" - {   ;-== ,D- {   ;   -=   A5 {   ;
--=   A~ =.string."func(*uint8, string) interface { }" - {   ;.= func(*ui- {   ;   .= nt8, str- {   ;   .= ing) int- {   ;   .= erface {- {   ;    .=  }      5 {   ;
-.=#   A~ =/go.string."func(*uint8, string) interface { }" - {   ;/== .D- {   ;   /="   A5 {   ;
-/=   A~ =0string."func(interface { })" - {   ;0= func(int- {   ;   0= erface {- {   ;   0=  })     5 {   ;
-0=   A~ =1go.string."func(interface { })" - {   ;1== 0D- {   ;   1=   A5 {   ;
-1=   A~ =string."func() int" - {   ;= func() i- {   ;   = nt      5 {   ;
-=   A~ =go.string."func() int" - {   ;== D- {   ;   =
-   A5 {   ;
-=   A~ =string."func(string, int) *ttf.Font" - {   ;= func(str- {   ;   = ing, int- {   ;   = ) *ttf.F- {   ;   = ont     5 {   ;
-=   A~ =go.string."func(string, int) *ttf.Font" - {   ;== D- {   ;   =   A5 {   ;
-=   A~ =string."func(int, int, int, uint32) *sdl.Surface" - {   ;= func(int- {   ;   = , int, i- {   ;   = nt, uint- {   ;   = 32) *sdl- {   ;    = .Surface- {   ;(   =         5 {   ;
-=)   A~ =go.string."func(int, int, int, uint32) *sdl.Surface" - {   ;== D- {   ;   =(   A5 {   ;
-=   A~ =string."func(string) *sdl.Surface" - {   ;= func(str- {   ;   = ing) *sd- {   ;   = l.Surfac- {   ;   = e       5 {   ;
-=   A~ =go.string."func(string) *sdl.Surface" - {   ;== D- {   ;   =   A5 {   ;
-=   A~ =	string."func(uint32, int, int, int, uint32, uint32, uint32, uint32) *sdl.Surface" - {   ;	= func(uin- {   ;   	= t32, int- {   ;   	= , int, i- {   ;   	= nt, uint- {   ;    	= 32, uint- {   ;(   	= 32, uint- {   ;0   	= 32, uint- {   ;8   	= 32) *sdl- {   ;@   	= .Surface- {   ;H   	=         5 {   ;
-	=I   A~ =
-go.string."func(uint32, int, int, int, uint32, uint32, uint32, uint32) *sdl.Surface" - {   ;
-== 	D- {   ;   
-=H   A5 {   ;
-
-=   A~ =string."func(*sdl.Surface) *console.SDLRenderer" - {   ;= func(*sd- {   ;   = l.Surfac- {   ;   = e) *cons- {   ;   = ole.SDLR- {   ;    = enderer 5 {   ;
-=(   A~ =go.string."func(*sdl.Surface) *console.SDLRenderer" - {   ;== D- {   ;   ='   A5 {   ;
-=   A~ =string."func(*uint8, *uint8, *console.SDLRenderer) console.Renderer" - {   ;= func(*ui- {   ;   = nt8, *ui- {   ;   = nt8, *co- {   ;   = nsole.SD- {   ;    = LRendere- {   ;(   = r) conso- {   ;0   = le.Rende- {   ;8   = rer     5 {   ;
-=<   A~ =go.string."func(*uint8, *uint8, *console.SDLRenderer) console.Renderer" - {   ;== D- {   ;   =;   A5 {   ;
-=   A~ =string."func(console.Renderer) *console.Console" - {   ;= func(con- {   ;   = sole.Ren- {   ;   = derer) *- {   ;   = console.- {   ;    = Console 5 {   ;
-=(   A~ =go.string."func(console.Renderer) *console.Console" - {   ;== D- {   ;   ='   A5 {   ;
-=   A~ =string."func(int64) *time.Ticker" - {   ;= func(int- {   ;   = 64) *tim- {   ;   = e.Ticker- {   ;   =         5 {   ;
-=   A~ =go.string."func(int64) *time.Ticker" - {   ;== D- {   ;   =   A5 {   ;
-=   A~ =string."func(int) *uint8" - {   ;= func(int- {   ;   = ) *uint8- {   ;   =         5 {   ;
-=   A~ =go.string."func(int) *uint8" - {   ;== D- {   ;   =   A5 {   ;
-=   A~ =string."<-chan int64" - {   ;= <-chan i- {   ;   = nt64    5 {   ;
-=   A~ =go.string."<-chan int64" - {   ;== D- {   ;   =   A5 {   ;
-=   A~ =string."func(*uint8, <-chan int64, *int64) bool" - {   ;= func(*ui- {   ;   = nt8, <-c- {   ;   = han int6- {   ;   = 4, *int6- {   ;    = 4) bool 5 {   ;
-=(   A~ =go.string."func(*uint8, <-chan int64, *int64) bool" - {   ;== D- {   ;   ='   A5 {   ;
-=   A~ =string."func(int64) string" - {   ;= func(int- {   ;   = 64) stri- {   ;   = ng      5 {   ;
-=   A~ =go.string."func(int64) string" - {   ;== D- {   ;   =   A5 {   ;
-=   A~ =string."chan<- string" - {   ;= chan<- s- {   ;   = tring   5 {   ;
-=   A~ =go.string."chan<- string" - {   ;== D- {   ;   =   A5 {   ;
-=   A~ =string."func(chan<- string, string)" - {   ;= func(cha- {   ;   = n<- stri- {   ;   = ng, stri- {   ;   = ng)     5 {   ;
-=   A~ =go.string."func(chan<- string, string)" - {   ;== D- {   ;   =   A5 {   ;
-=   A~ =string."func(*uint8)" - {   ;= func(*ui- {   ;   = nt8)    5 {   ;
-=   A~ = go.string."func(*uint8)" - {   ; == D- {   ;    =   A5 {   ;
- =   A~ =!string."chan<- bool" - {   ;!= chan<- b- {   ;   != ool     5 {   ;
-!=   A~ ="go.string."chan<- bool" - {   ;"== !D- {   ;   "=   A5 {   ;
-"=   A~ =#string."func(chan<- bool, bool)" - {   ;#= func(cha- {   ;   #= n<- bool- {   ;   #= , bool) 5 {   ;
-#=   A~ =$go.string."func(chan<- bool, bool)" - {   ;$== #D- {   ;   $=   A5 {   ;
-$=   A~ =%string."func(*testing.T)" - {   ;%= func(*te- {   ;   %= sting.T)- {   ;   %=         5 {   ;
-%=   A~ =&go.string."func(*testing.T)" - {   ;&== %D- {   ;   &=   A5 {   ;
-&=   A~ ='string."[3]func(*prettytest.T)" - {   ;'= [3]func(- {   ;   '= *prettyt- {   ;   '= est.T)  5 {   ;
-'=   A~ =(go.string."[3]func(*prettytest.T)" - {   ;(== 'D- {   ;   (=   A5 {   ;
-(=   A~ =)string."*[3]func(*prettytest.T)" - {   ;)= *[3]func- {   ;   )= (*pretty- {   ;   )= test.T) 5 {   ;
-)=   A~ =*go.string."*[3]func(*prettytest.T)" - {   ;*== )D- {   ;   *=   A5 {   ;
-*=   A~ =+string."func(int32) *[3]func(*prettytest.T)" - {   ;+= func(int- {   ;   += 32) *[3]- {   ;   += func(*pr- {   ;   += ettytest- {   ;    += .T)     5 {   ;
-+=$   A~ =,go.string."func(int32) *[3]func(*prettytest.T)" - {   ;,== +D- {   ;   ,=#   A5 {   ;
-,=   A~ =-string."[]func(*prettytest.T)" - {   ;-= []func(*- {   ;   -= prettyte- {   ;   -= st.T)   5 {   ;
--=   A~ =.go.string."[]func(*prettytest.T)" - {   ;.== -D- {   ;   .=   A5 {   ;
-.=   A~ =/string."func(*testing.T, string, ...func(*prettytest.T))" - {   ;/= func(*te- {   ;   /= sting.T,- {   ;   /=  string,- {   ;   /=  ...func- {   ;    /= (*pretty- {   ;(   /= test.T))- {   ;0   /=         5 {   ;
-/=1   A~ =0go.string."func(*testing.T, string, ...func(*prettytest.T))" - {   ;0== /D- {   ;   0=0   A5 {   ;
-0=   A~ =1string."runtime" - {   ;1= runtime 5 {   ;
-1=   A~ =string."time" - {   ;= time    5 {   ;
-=   A~ =string."spectrum/prettytest" - {   ;= spectrum- {   ;   = /prettyt- {   ;   = est     5 {   ;
-=   A~ =string."testing" - {   ;= testing 5 {   ;
-=   A~ =string."âš›sdl/ttf" - {   ;= âš›sdl/t- {   ;   = tf      5 {   ;
-=   A~ =string."âš›sdl" - {   ;= âš›sdl  5 {   ;
-=   A~ =string."console" - {   ;= console 5 {   ;
-=   AM      
