@@ -4,5 +4,6 @@
 _testmain*
 _test/
 _obj*
-x
+example/shell
+
 
