@@ -2,7 +2,7 @@ package cli
 
 import (
 	"testing"
-	pt "spectrum/prettytest"
+	pt "prettytest"
 )
 
 var console *Console

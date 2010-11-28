@@ -2,7 +2,7 @@ package specs
 
 import (
 	"testing"
-	pt "spectrum/prettytest"
+	pt "prettytest"
 	"clingon"
 )
 

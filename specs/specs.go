@@ -4,7 +4,7 @@ import (
 	"⚛sdl"
 	"⚛sdl/ttf"
 	"time"
-	pt "spectrum/prettytest"
+	pt "prettytest"
 	"clingon"
 )
 
