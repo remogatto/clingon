@@ -5,7 +5,7 @@ import (
 	"⚛sdl/ttf"
 	"time"
 	pt "spectrum/prettytest"
-	"cli"
+	"clingon"
 )
 
 const (
@@ -15,9 +15,9 @@ const (
 )
 
 var (
-	console *cli.Console
+	console *clingon.Console
 	echoer Echoer
-	sdlrenderer *cli.SDLRenderer
+	sdlrenderer *clingon.SDLRenderer
 	appSurface, gopher *sdl.Surface
 )
 
@@ -32,16 +32,16 @@ type Interactor interface {
 }
 
 type EnterCommand struct {
-	console *cli.Console
+	console *clingon.Console
 	command string
 	time int64
 }
 
-func NewEnterCommand(console *cli.Console, command string, time int64) *EnterCommand {
+func NewEnterCommand(console *clingon.Console, command string, time int64) *EnterCommand {
 	return &EnterCommand{console, command + "\u000d", time}
 }
 
-func ExecuteEnterCommand(console *cli.Console, command string, time int64) (done bool) {
+func ExecuteEnterCommand(console *clingon.Console, command string, time int64) (done bool) {
 	doneCh := make(chan bool)
 	go (&EnterCommand{console, command + "\u000d", time}).Interact(doneCh)
 	for {
@@ -61,12 +61,12 @@ func (i *EnterCommand) Interact(done chan bool) {
 }
 
 type BrowseHistory struct {
-	console *cli.Console
+	console *clingon.Console
 	dirs []int
 	time int64
 }
 
-func NewBrowseHistory(console *cli.Console, dirs []int, time int64) *BrowseHistory {
+func NewBrowseHistory(console *clingon.Console, dirs []int, time int64) *BrowseHistory {
 	return &BrowseHistory{console, dirs, time}
 }
 func (i *BrowseHistory) Interact(done chan bool) {
@@ -78,11 +78,11 @@ func (i *BrowseHistory) Interact(done chan bool) {
 }
 
 type MoveCursor struct {
-	console *cli.Console
+	console *clingon.Console
 	dirs []int
 	time int64
 }
-func NewMoveCursor(console *cli.Console, dirs []int, time int64) *MoveCursor {
+func NewMoveCursor(console *clingon.Console, dirs []int, time int64) *MoveCursor {
 	return &MoveCursor{console, dirs, time}
 }
 func (i *MoveCursor) Interact(done chan bool) {
@@ -131,10 +131,10 @@ func beforeAll(t *pt.T) {
 	appSurface = sdl.SetVideoMode(640, 480, 32, 0)
 	gopher = sdl.Load("../testdata/gopher.jpg")
 
-	sdlrenderer = cli.NewSDLRenderer(sdl.CreateRGBSurface(sdl.SRCALPHA, 560, 400, 32, 0, 0, 0, 0), font)
+	sdlrenderer = clingon.NewSDLRenderer(sdl.CreateRGBSurface(sdl.SRCALPHA, 560, 400, 32, 0, 0, 0, 0), font)
 	sdlrenderer.GetSurface().SetAlpha(sdl.SRCALPHA, 0xaa)
 
-	console = cli.NewConsole(sdlrenderer, &Echoer{})
+	console = clingon.NewConsole(sdlrenderer, &Echoer{})
 
 	render()
 	appSurface.Flip()

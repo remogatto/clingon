@@ -5,12 +5,12 @@ import (
 	"⚛sdl/ttf"
 	"fmt"
 	"strings"
-	"cli"
+	"clingon"
 )
 
 var (
-	console *cli.Console
-	sdlrenderer *cli.SDLRenderer
+	console *clingon.Console
+	sdlrenderer *clingon.SDLRenderer
 	appSurface, gopher *sdl.Surface
 	running, toUpper bool
 )
@@ -40,10 +40,10 @@ func sdlinit() {
 	appSurface = sdl.SetVideoMode(640, 480, 32, 0)
 	gopher = sdl.Load("../testdata/gopher.jpg")
 
-	sdlrenderer = cli.NewSDLRenderer(sdl.CreateRGBSurface(sdl.SRCALPHA, 560, 400, 32, 0, 0, 0, 0), font)
+	sdlrenderer = clingon.NewSDLRenderer(sdl.CreateRGBSurface(sdl.SRCALPHA, 560, 400, 32, 0, 0, 0, 0), font)
 	sdlrenderer.GetSurface().SetAlpha(sdl.SRCALPHA, 0xaa)
 
-	console = cli.NewConsole(sdlrenderer, &ShellEvaluator{})
+	console = clingon.NewConsole(sdlrenderer, &ShellEvaluator{})
 	console.SetPrompt("shell:$ ")
 }
 
@@ -82,13 +82,13 @@ func main() {
 					} else if (keyName == "left shift") && (e.Type == sdl.KEYDOWN) {
 						toUpper = true
 					} else if (keyName == "up") && (e.Type == sdl.KEYDOWN) {
-						console.HistoryCh() <- cli.HISTORY_PREV
+						console.HistoryCh() <- clingon.HISTORY_PREV
 					} else if (keyName == "down") && (e.Type == sdl.KEYDOWN) {
-						console.HistoryCh() <- cli.HISTORY_NEXT
+						console.HistoryCh() <- clingon.HISTORY_NEXT
 					} else if (keyName == "left") && (e.Type == sdl.KEYDOWN) {
-						console.CursorCh() <- cli.CURSOR_LEFT
+						console.CursorCh() <- clingon.CURSOR_LEFT
 					} else if (keyName == "right") && (e.Type == sdl.KEYDOWN) {
-						console.CursorCh() <- cli.CURSOR_RIGHT
+						console.CursorCh() <- clingon.CURSOR_RIGHT
 					} else {
 						unicode := e.Keysym.Unicode
 						if unicode > 0 {

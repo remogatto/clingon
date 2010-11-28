@@ -1,6 +1,6 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=cli
+TARG=clingon
 GOFILES=\
 	console.go\
 	sdlrenderer.go\
