@@ -1,8 +1,8 @@
 package main
 
 import (
-	"⚛sdl"
-	"⚛sdl/ttf"
+	"github.com/0xe2-0x9a-0x9b/Go-SDL/sdl"
+	"github.com/0xe2-0x9a-0x9b/Go-SDL/sdl/ttf"
 	"fmt"
 	"strings"
 	"clingon"
