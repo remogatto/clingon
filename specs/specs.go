@@ -2,9 +2,7 @@ package specs
 
 import (
 	"⚛sdl"
-	"⚛sdl/ttf"
 	"time"
-	pt "prettytest"
 	"clingon"
 )
 
@@ -113,34 +111,4 @@ func render() {
 	appSurface.UpdateRect(40, 40, 560, 400)
 }
 
-func beforeAll(t *pt.T) {
-	if sdl.Init(sdl.INIT_VIDEO) != 0 {
-		panic(sdl.GetError())
-	}
-
-	if ttf.Init() != 0 {
-		panic(sdl.GetError())
-	}
-
-	font := ttf.OpenFont("../testdata/VeraMono.ttf", 12)
-
-	if font == nil {
-		panic(sdl.GetError())
-	}
-
-	appSurface = sdl.SetVideoMode(640, 480, 32, 0)
-	gopher = sdl.Load("../testdata/gopher.jpg")
-
-	sdlrenderer = clingon.NewSDLRenderer(sdl.CreateRGBSurface(sdl.SRCALPHA, 560, 400, 32, 0, 0, 0, 0), font)
-	sdlrenderer.GetSurface().SetAlpha(sdl.SRCALPHA, 0xaa)
-
-	console = clingon.NewConsole(sdlrenderer, &Echoer{})
-
-	render()
-	appSurface.Flip()
-}
-
-func afterAll(t *pt.T) {
-	sdl.Quit()
-}
 
