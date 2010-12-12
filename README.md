@@ -17,15 +17,15 @@ design. Basically, there are two goroutine running in parallel:
   of the console state.
 
 <pre>
-  +---------------+	  +---------------+
-  |    console    |	  |   renderer    |
-  |   goroutine   |------>|   goroutine   |
-  +---------------+	  +---------------+
-	^
+ +---------------+	  +---------------+
+ |    console    |	  |   renderer    |
+ |   goroutine   |------->|   goroutine   |
+ +---------------+	  +---------------+
+        ^
         |				 
-  +---------------+
-  |  client code  |
-  +---------------+
+ +---------------+
+ |  client code  |
+ +---------------+
 </pre>
 
 The fact that clingon runs in parallel makes it an interesting choice
@@ -93,7 +93,7 @@ folder:
 
 # Video
 
-* http://www.youtube.com/watch?v=nee3BOtvUCE
+* [Clingon demo](http://www.youtube.com/watch?v=nee3BOtvUCE)
 
 # License
 
