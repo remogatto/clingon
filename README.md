@@ -17,10 +17,10 @@ design. Basically, there are two goroutine running in parallel:
   of the console state.
 
 <pre>
- +---------------+	  +---------------+
- |    console    |	  |   renderer    |
+ +---------------+	     +---------------+
+ |    console    |	     |   renderer    |
  |   goroutine   |------->|   goroutine   |
- +---------------+	  +---------------+
+ +---------------+	     +---------------+
         ^
         |				 
  +---------------+
