@@ -1,6 +1,7 @@
 package clingon
 
 import (
+	"os"
 	"time"
 	"strings"
 	"container/vector"
@@ -15,13 +16,22 @@ const (
 )
 
 type Evaluator interface {
-	Run(command string) string
+	Run(console *Console, command string) os.Error
 }
 
 type Renderer interface {
-	RenderCommandLine(commandLine *CommandLine)
-	RenderVisibleLines(console *Console)
-	EnableCursor(enable bool)
+	// Returns a receive-only channel that receives a Console
+	// instance for updating the command-line
+ 	RenderCommandLineCh() chan<- *Console
+	// Returns a receive-only channel that receives a Console
+	// instance for updating the whole console visible area	
+	RenderConsoleCh() chan<- *Console
+	// Tell the renderer to render the cursor at current position
+	// by sending a console instance
+	RenderCursorCh() chan<- *Console
+	// Tell the renderer to enable/disable the cursor at current
+	// position by sending a bool value
+	EnableCursorCh() chan<- bool
 }
 
 type CommandLine struct {
@@ -77,8 +87,8 @@ func (commandLine *CommandLine) Clear() {
 	commandLine.historyCount = commandLine.history.Len()
 }
 
-// Cycle history on the command line
-func (commandLine *CommandLine) CycleHistory(direction int) {
+// Browse history on the command line
+func (commandLine *CommandLine) BrowseHistory(direction int) {
 	if direction == HISTORY_NEXT {
 		commandLine.historyCount++
 	} else {
@@ -160,6 +170,7 @@ func (commandLine *CommandLine) notInHistory(line string) bool {
 
 type Console struct {
 	CommandLine *CommandLine
+	Paused bool
 
 	lines *vector.StringVector
 
@@ -172,12 +183,11 @@ type Console struct {
 	linesCh chan string
 	historyCh, cursorCh chan int
 
-	backspaceCh, returnCh, renderingDone chan bool
+	backspaceCh, returnCh, pauseCh, renderingDone chan bool
 }
 
 func NewConsole(renderer Renderer, evaluator Evaluator) *Console {
 	console :=  &Console{
-
 	lines: new(vector.StringVector),
 	CommandLine: NewCommandLine("console> "),
 	charCh: make(chan uint16),
@@ -186,15 +196,12 @@ func NewConsole(renderer Renderer, evaluator Evaluator) *Console {
 	returnCh: make(chan bool),
 	historyCh: make(chan int),
 	cursorCh: make(chan int),
+	pauseCh: make(chan bool),
 	renderingDone: make(chan bool),
 	renderer: renderer,
 	evaluator: evaluator,
 	}
-
 	go console.loop()
-
-	console.renderer.RenderCommandLine(console.CommandLine)
-
 	return console
 }
 
@@ -208,6 +215,11 @@ func (console *Console) Return() string {
 	commandLine := console.CommandLine.Push()
 	console.lines.Push(console.CommandLine.Prompt + commandLine)
 	return commandLine
+}
+
+// Print a string on the console
+func (console *Console) Print(str string) {
+	console.PushLines(strings.Split(str, "\n", -1))
 }
 
 // Push lines
@@ -251,49 +263,78 @@ func (console *Console) CursorCh() chan<- int {
 func (console *Console) loop() {
 	var toggleCursor bool
 	ticker := time.NewTicker(CURSOR_BLINK_TIME)
+
+	// Render the prompt before starting the loop
+	if console.renderer != nil {
+		console.renderer.RenderCommandLineCh() <- console
+	}
+
 	for {
-		select {
-		case char := <-console.charCh:
-			switch char {
-			case 0x0008: // BACKSPACE
-				console.CommandLine.BackSpace()
-				console.renderer.EnableCursor(true)
-				console.renderer.RenderCommandLine(console.CommandLine)
-			case 0x000d: // RETURN
-				command := console.Return()
-				if console.evaluator != nil && command != "" {
-					result := console.evaluator.Run(command)
-					lines := strings.Split(result, "\n", -1)
-					console.PushLines(lines)
+		if !console.Paused {
+			select {
+			case char := <-console.charCh:
+				switch char {
+				case 0x0008: // BACKSPACE
+					console.CommandLine.BackSpace()
+					if console.renderer != nil {
+						console.renderer.EnableCursorCh() <- true
+						console.renderer.RenderCommandLineCh() <- console
+					}
+				case 0x000d: // RETURN
+					command := console.Return()
+					if console.evaluator != nil {
+						console.evaluator.Run(console, command)
+					}
+					if console.renderer != nil {
+						console.renderer.EnableCursorCh() <- true
+						console.renderer.RenderConsoleCh() <- console
+					}
+				default:
+					console.CommandLine.Insert(string(char))
+					if console.renderer != nil {
+						console.renderer.EnableCursorCh() <- true
+						console.renderer.RenderCommandLineCh() <- console
+					}
 				}
-				console.renderer.EnableCursor(true)
-				console.renderer.RenderVisibleLines(console)
-			default:
-				console.CommandLine.Insert(string(char))
-				console.renderer.EnableCursor(true)
-				console.renderer.RenderCommandLine(console.CommandLine)
+				
+			case str := <-console.linesCh: // Receive lines of text
+				lines := strings.Split(str, "\n", -1)
+				console.PushLines(lines)
+				if console.renderer != nil {
+					console.renderer.RenderConsoleCh() <- console
+				}
+				
+			case historyDirection := <-console.historyCh: // Browse history
+				console.CommandLine.BrowseHistory(historyDirection)
+				if console.renderer != nil {
+					console.renderer.EnableCursorCh() <- true
+					console.renderer.RenderCommandLineCh() <- console
+				}
+
+			case cursorDirection := <-console.cursorCh: // Move cursor left/right on the command-line
+				console.CommandLine.MoveCursor(cursorDirection)
+				if console.renderer != nil {
+					console.renderer.EnableCursorCh() <- true
+					console.renderer.RenderCommandLineCh() <- console
+				}
+
+			case <-ticker.C: // Blink cursor
+				if console.renderer != nil {
+					console.renderer.EnableCursorCh() <- toggleCursor
+					console.renderer.RenderCursorCh() <- console
+				}
+				toggleCursor = !toggleCursor
 			}
- 
-		case str := <-console.linesCh: // Receive lines of text
-			lines := strings.Split(str, "\n", -1)
-			console.PushLines(lines)
-			console.renderer.RenderVisibleLines(console)
+		} else {
+
+			select {
+			case <-console.charCh:
+			case <-console.linesCh: 
+			case <-console.historyCh:
+			case <-console.cursorCh:
+			case <-ticker.C:
+			}
 			
-		case historyDirection := <-console.historyCh: // Browse history
-			console.CommandLine.CycleHistory(historyDirection)
-			console.renderer.EnableCursor(true)
-			console.renderer.RenderCommandLine(console.CommandLine)
-
-		case cursorDirection := <-console.cursorCh: // Move cursor on the command line
-			console.CommandLine.MoveCursor(cursorDirection)
-			console.renderer.EnableCursor(true)
-			console.renderer.RenderCommandLine(console.CommandLine)
-
-		case <-ticker.C: // Blink cursor
-			console.renderer.EnableCursor(toggleCursor)
-			console.renderer.RenderCommandLine(console.CommandLine)
-			toggleCursor = !toggleCursor
-
 		}
 	}
 }

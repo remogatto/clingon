@@ -6,15 +6,19 @@ import (
 	"bytes"
 	"io"
 	"strings"
+	"clingon"
 )
 
 type ShellEvaluator struct {}
-func (*ShellEvaluator) Run(command string) string {
+
+func (eval *ShellEvaluator) Run(console *clingon.Console, command string) os.Error {
 	out, err := system(command, exec.DevNull, exec.Pipe, exec.MergeWithStdout)
 	if err != nil {
-		return err.String()
+		console.Print(err.String())
+		return err
 	}
-	return out
+	console.Print(out)
+	return nil
 }
 
 func system(command string, args ...int) (out string, err os.Error) {

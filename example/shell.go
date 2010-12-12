@@ -15,10 +15,12 @@ var (
 	running, toUpper bool
 )
 
-func render() {
-	appSurface.Blit(&sdl.Rect{0, 0, 0, 0}, gopher, nil)
-	appSurface.Blit(&sdl.Rect{40, 40, 0, 0}, sdlrenderer.GetSurface(), &sdl.Rect{0,0, 560, 400})
-	appSurface.UpdateRect(40, 40, 560, 400)
+func render(updatedRects []sdl.Rect) {
+	for _, r := range updatedRects {
+		appSurface.Blit(&sdl.Rect{r.X + 40, r.Y + 40, 0, 0}, gopher, &sdl.Rect{r.X + 40, r.Y + 40, r.W, r.H})
+		appSurface.Blit(&sdl.Rect{r.X + 40, r.Y + 40, 0, 0}, sdlrenderer.GetSurface(), &r)
+		appSurface.UpdateRect(int32(r.X + 40), int32(r.Y + 40), uint32(r.W), uint32(r.H))
+	}
 }
 
 func sdlinit() {
@@ -30,7 +32,7 @@ func sdlinit() {
 		panic(sdl.GetError())
 	}
 
-	font := ttf.OpenFont("../testdata/VeraMono.ttf", 12)
+	font := ttf.OpenFont("testdata/VeraMono.ttf", 12)
 
 	if font == nil {
 		panic(sdl.GetError())
@@ -38,18 +40,23 @@ func sdlinit() {
 
 	sdl.EnableUNICODE(1)
 	appSurface = sdl.SetVideoMode(640, 480, 32, 0)
-	gopher = sdl.Load("../testdata/gopher.jpg")
+	gopher = sdl.Load("testdata/gopher.jpg")
+	appSurface.Blit(&sdl.Rect{0, 0, 0, 0}, gopher, nil)
 
 	sdlrenderer = clingon.NewSDLRenderer(sdl.CreateRGBSurface(sdl.SRCALPHA, 560, 400, 32, 0, 0, 0, 0), font)
 	sdlrenderer.GetSurface().SetAlpha(sdl.SRCALPHA, 0xaa)
 
 	console = clingon.NewConsole(sdlrenderer, &ShellEvaluator{})
 	console.SetPrompt("shell:$ ")
+	if sdlrenderer.GetSurface() != nil {
+		appSurface.Blit(&sdl.Rect{40, 40, 0, 0}, sdlrenderer.GetSurface(), &sdl.Rect{0,0, 560, 400})
+	}
+
 }
 
 func main() {
 	sdlinit()
-	render()
+	render(nil)
 	appSurface.Flip()
 	running = true
 	go func() {
@@ -106,7 +113,12 @@ func main() {
 		}
 	}()
 
-	for running { render() }
+	for running { 
+		select {
+		case rects := <-sdlrenderer.UpdatedRectsCh():
+			render(rects)
+		} 
+	}
 
 	ttf.Quit()
 	sdl.Quit()

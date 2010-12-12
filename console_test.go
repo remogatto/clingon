@@ -8,14 +8,27 @@ import (
 var console *Console
 
 // Renderer mock
-type testRenderer struct {}
+type testRenderer struct {
+	dummyConsoleCh chan *Console
+	dummyBoolCh chan bool
+}
 
-func (renderer *testRenderer) RenderCommandLine(commandLine *CommandLine) {}
-func (renderer *testRenderer) RenderVisibleLines(console *Console) {}
-func (renderer *testRenderer) EnableCursor(enable bool) {}
+func (renderer *testRenderer) RenderCommandLineCh() chan<- *Console { return renderer.dummyConsoleCh }
+func (renderer *testRenderer) RenderConsoleCh() chan<- *Console { return renderer.dummyConsoleCh }
+func (renderer *testRenderer) RenderCursorCh() chan<- *Console { return renderer.dummyConsoleCh }
+func (renderer *testRenderer) EnableCursorCh() chan<- bool { return renderer.dummyBoolCh }
 
 func NewTestRenderer() *testRenderer {
-	return &testRenderer{}
+	r := &testRenderer{make(chan *Console), make(chan bool)}
+	go func() {
+		for {
+			select {
+			case <-r.dummyConsoleCh:
+			case <-r.dummyBoolCh:
+			}
+		}
+	}()
+	return r
 }
 
 type consoleTestSuite struct { pt.Suite }
@@ -72,28 +85,28 @@ func (s *consoleTestSuite) testHistoryCh() {
 	console.CommandLine.Insert("z")
 	console.Return()
 
-	console.CommandLine.CycleHistory(HISTORY_PREV)
+	console.CommandLine.BrowseHistory(HISTORY_PREV)
 	s.Equal("console> biz", console.CommandLine.String())
 
-	console.CommandLine.CycleHistory(HISTORY_PREV)
+	console.CommandLine.BrowseHistory(HISTORY_PREV)
 	s.Equal("console> bar", console.CommandLine.String())
 
-	console.CommandLine.CycleHistory(HISTORY_PREV)
+	console.CommandLine.BrowseHistory(HISTORY_PREV)
 	s.Equal("console> foo", console.CommandLine.String())
 
-	console.CommandLine.CycleHistory(HISTORY_PREV)
+	console.CommandLine.BrowseHistory(HISTORY_PREV)
 	s.Equal("console> foo", console.CommandLine.String())
 
-	console.CommandLine.CycleHistory(HISTORY_NEXT)
+	console.CommandLine.BrowseHistory(HISTORY_NEXT)
 	s.Equal("console> bar", console.CommandLine.String())
 
-	console.CommandLine.CycleHistory(HISTORY_NEXT)
+	console.CommandLine.BrowseHistory(HISTORY_NEXT)
 	s.Equal("console> biz", console.CommandLine.String())
 
-	console.CommandLine.CycleHistory(HISTORY_NEXT)
+	console.CommandLine.BrowseHistory(HISTORY_NEXT)
 	s.Equal("console> ", console.CommandLine.String())
 
-	console.CommandLine.CycleHistory(HISTORY_PREV)
+	console.CommandLine.BrowseHistory(HISTORY_PREV)
 	s.Equal("console> biz", console.CommandLine.String())
 
 	console.CommandLine.Insert("b")
@@ -101,10 +114,10 @@ func (s *consoleTestSuite) testHistoryCh() {
 	console.CommandLine.Insert("r")
 	console.Return()
 
-	console.CommandLine.CycleHistory(HISTORY_PREV)
+	console.CommandLine.BrowseHistory(HISTORY_PREV)
 	s.Equal("console> bizbar", console.CommandLine.String())
 
-	console.CommandLine.CycleHistory(HISTORY_PREV)
+	console.CommandLine.BrowseHistory(HISTORY_PREV)
 	s.Equal("console> biz", console.CommandLine.String())
 }
 
