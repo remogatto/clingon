@@ -63,7 +63,7 @@ func NewBrowseHistory(console *clingon.Console, dirs []int, time int64) *BrowseH
 }
 func (i *BrowseHistory) Interact(done chan bool) {
 	for _, dir := range i.dirs {
-		console.HistoryCh() <- dir
+		console.ReadlineCh() <- dir
 		if i.time > 0 { time.Sleep(i.time) }
 	}
 	done <- true
@@ -79,7 +79,7 @@ func NewMoveCursor(console *clingon.Console, dirs []int, time int64) *MoveCursor
 }
 func (i *MoveCursor) Interact(done chan bool) {
 	for _, dir := range i.dirs {
-		console.CursorCh() <- dir
+		console.ReadlineCh() <- dir
 		if i.time > 0 { time.Sleep(i.time) }
 	}
 	done <- true

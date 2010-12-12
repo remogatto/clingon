@@ -9,10 +9,11 @@ import (
 
 const (
 	CURSOR_BLINK_TIME = 5e8
-	HISTORY_NEXT = 1
-	HISTORY_PREV = 2
-	CURSOR_LEFT = 1
-	CURSOR_RIGHT = 2
+	
+	HISTORY_NEXT = iota
+	HISTORY_PREV
+	CURSOR_LEFT
+	CURSOR_RIGHT
 )
 
 type Evaluator interface {
@@ -185,7 +186,7 @@ type Console struct {
 	// Channels
 	charCh chan uint16
 	linesCh chan string
-	historyCh, cursorCh chan int
+	readlineCh chan int
 
 	backspaceCh, returnCh chan bool
 }
@@ -200,8 +201,7 @@ func NewConsole(renderer Renderer, evaluator Evaluator) *Console {
 	linesCh: make(chan string),
 	backspaceCh: make(chan bool),
 	returnCh: make(chan bool),
-	historyCh: make(chan int),
-	cursorCh: make(chan int),
+	readlineCh: make(chan int),
 	renderer: renderer,
 	evaluator: evaluator,
 	}
@@ -255,15 +255,11 @@ func (console *Console) LinesCh() chan<- string {
 	return console.linesCh
 }
 
-// Return the history channel (receive only)
-func (console *Console) HistoryCh() chan<- int {
-	return console.historyCh
-}
-
-// Return the move cursor channel (receive only). Values sent to this
-// channel trigger the cursor movement on the command line.
-func (console *Console) CursorCh() chan<- int {
-	return console.cursorCh
+// Client code can send readline-like command to this channel
+// (e.g. history browsing, cursor movements, etc.). Readline's command
+// emulation is incomplete.
+func (console *Console) ReadlineCh() chan<- int {
+	return console.readlineCh
 }
 
 func (console *Console) loop() {
@@ -312,15 +308,14 @@ func (console *Console) loop() {
 					console.renderer.RenderConsoleCh() <- console
 				}
 				
-			case historyDirection := <-console.historyCh: // Browse history
-				console.CommandLine.BrowseHistory(historyDirection)
-				if console.renderer != nil {
-					console.renderer.EnableCursorCh() <- true
-					console.renderer.RenderCommandLineCh() <- console
-				}
+			case readlineCmd := <-console.readlineCh: // Browse history
+				switch readlineCmd {
+					case HISTORY_NEXT, HISTORY_PREV:
+					console.CommandLine.BrowseHistory(readlineCmd)
 
-			case cursorDirection := <-console.cursorCh: // Move cursor left/right on the command-line
-				console.CommandLine.MoveCursor(cursorDirection)
+					case CURSOR_LEFT, CURSOR_RIGHT:
+					console.CommandLine.MoveCursor(readlineCmd)
+				}
 				if console.renderer != nil {
 					console.renderer.EnableCursorCh() <- true
 					console.renderer.RenderCommandLineCh() <- console
@@ -338,8 +333,7 @@ func (console *Console) loop() {
 			select {
 			case <-console.charCh:
 			case <-console.linesCh: 
-			case <-console.historyCh:
-			case <-console.cursorCh:
+			case <-console.readlineCh:
 			case <-ticker.C:
 			}
 			
