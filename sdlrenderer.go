@@ -14,14 +14,14 @@ type metrics struct {
 	width, height uint16
 
 	cursorWidth, cursorHeight uint16
-	fontWidth, fontHeight int
-	cursorY int16
-	lastVisibleLine int
-	commandLineRect *sdl.Rect
+	fontWidth, fontHeight     int
+	cursorY                   int16
+	lastVisibleLine           int
+	commandLineRect           *sdl.Rect
 }
 
 func (m *metrics) calcMetrics() {
-	m.cursorWidth = uint16(m.fontWidth) 
+	m.cursorWidth = uint16(m.fontWidth)
 	m.cursorHeight = uint16(m.fontHeight)
 	m.lastVisibleLine = int(float(m.height) / float(m.fontHeight))
 
@@ -50,13 +50,13 @@ type SDLRenderer struct {
 	// Set the font family
 	Font *ttf.Font
 
-	layout metrics
-	internalSurface, visibleSurface *sdl.Surface
-	cursorOn bool
+	layout                                               metrics
+	internalSurface, visibleSurface                      *sdl.Surface
+	cursorOn                                             bool
 	renderCommandLineCh, renderConsoleCh, renderCursorCh chan *Console
-	enableCursorCh chan bool
-	updatedRects []sdl.Rect
-	updatedRectsCh chan []sdl.Rect
+	enableCursorCh                                       chan bool
+	updatedRects                                         []sdl.Rect
+	updatedRectsCh                                       chan []sdl.Rect
 }
 
 func NewSDLRenderer(surface *sdl.Surface, font *ttf.Font) *SDLRenderer {
@@ -64,27 +64,27 @@ func NewSDLRenderer(surface *sdl.Surface, font *ttf.Font) *SDLRenderer {
 	surface.GetClipRect(rect)
 
 	renderer := &SDLRenderer{
-	FPS: DEFAULT_SDL_RENDERER_FPS,
-	Color: sdl.Color{255, 255, 255, 0},
-	internalSurface: sdl.CreateRGBSurface(sdl.SWSURFACE, int(surface.W), int(surface.H), 32, 0, 0, 0, 0),
-	visibleSurface: surface,
-	Font: font,
-	renderCommandLineCh: make(chan *Console),
-	renderConsoleCh: make(chan *Console),
-	renderCursorCh: make(chan *Console),
-	enableCursorCh: make(chan bool),
-	updatedRects: make([]sdl.Rect, 0),
-	updatedRectsCh: make(chan []sdl.Rect),
+		FPS:                 DEFAULT_SDL_RENDERER_FPS,
+		Color:               sdl.Color{255, 255, 255, 0},
+		internalSurface:     sdl.CreateRGBSurface(sdl.SWSURFACE, int(surface.W), int(surface.H), 32, 0, 0, 0, 0),
+		visibleSurface:      surface,
+		Font:                font,
+		renderCommandLineCh: make(chan *Console),
+		renderConsoleCh:     make(chan *Console),
+		renderCursorCh:      make(chan *Console),
+		enableCursorCh:      make(chan bool),
+		updatedRects:        make([]sdl.Rect, 0),
+		updatedRectsCh:      make(chan []sdl.Rect),
 	}
 
-	fontWidth, fontHeight, _ := font.SizeText("A")	
+	fontWidth, fontHeight, _ := font.SizeText("A")
 
 	renderer.layout = metrics{
 
-	width: rect.W,
-	height: rect.H,
-	fontWidth: fontWidth,
-	fontHeight: fontHeight,
+		width:      rect.W,
+		height:     rect.H,
+		fontWidth:  fontWidth,
+		fontHeight: fontHeight,
 	}
 
 	renderer.layout.calcMetrics()
@@ -126,7 +126,7 @@ func (renderer *SDLRenderer) renderConsole(console *Console) {
 	renderer.clear()
 	for i := console.lines.Len(); i > 0; i-- {
 		if i < renderer.layout.lastVisibleLine {
-			renderer.renderLine(i, console.lines.At(console.lines.Len() - i))
+			renderer.renderLine(i, console.lines.At(console.lines.Len()-i))
 		} else {
 			continue
 		}
@@ -161,15 +161,15 @@ func (renderer *SDLRenderer) renderLine(pos int, line string) {
 	}
 
 	x := renderer.layout.commandLineRect.X
-	y := int16(renderer.layout.commandLineRect.Y) - int16(renderer.layout.commandLineRect.H * uint16(pos))
-	w := renderer.layout.commandLineRect.W 
+	y := int16(renderer.layout.commandLineRect.Y) - int16(renderer.layout.commandLineRect.H*uint16(pos))
+	w := renderer.layout.commandLineRect.W
 	h := renderer.layout.commandLineRect.H
 
 	if textSurface != nil {
 		renderer.internalSurface.Blit(&sdl.Rect{x, y, w, h}, textSurface, nil)
 		textSurface.Free()
 	}
-	
+
 	renderer.updatedRects = append(renderer.updatedRects, sdl.Rect{x, y, w, h})
 }
 
@@ -183,7 +183,7 @@ func (renderer *SDLRenderer) getSurfaceAddr(x, y uint) uintptr {
 func (renderer *SDLRenderer) renderXORRect(x0, y0 int16, w, h uint16, color uint32) {
 	x1 := x0 + int16(w)
 	y1 := y0 + int16(h)
-	for y:=y0; y < y1; y++ {
+	for y := y0; y < y1; y++ {
 		for x := x0; x < x1; x++ {
 			addr := renderer.getSurfaceAddr(uint(x), uint(y))
 			currColor := *(*uint32)(unsafe.Pointer(addr))
@@ -200,15 +200,15 @@ func (renderer *SDLRenderer) renderCursorRect(x int16) {
 		cursorColor = 0xffffffff
 	}
 	renderer.renderXORRect(x, renderer.layout.cursorY, renderer.layout.cursorWidth, renderer.layout.cursorHeight, cursorColor)
-	renderer.updatedRects = append(renderer.updatedRects, sdl.Rect{x, renderer.layout.cursorY, renderer.layout.cursorWidth, renderer.layout.cursorHeight })
+	renderer.updatedRects = append(renderer.updatedRects, sdl.Rect{x, renderer.layout.cursorY, renderer.layout.cursorWidth, renderer.layout.cursorHeight})
 }
 
 func (renderer *SDLRenderer) cursorX(commandLine *CommandLine) int16 {
 	var (
-		cursorX int = int(renderer.layout.commandLineRect.X)
+		cursorX  int = int(renderer.layout.commandLineRect.X)
 		finalPos = commandLine.cursorPosition + len(commandLine.Prompt)
 	)
-	
+
 	for pos, c := range commandLine.String() {
 		_, _, _, _, advance, _ := renderer.Font.GlyphMetrics(uint16(c))
 		if pos < finalPos {
@@ -220,11 +220,11 @@ func (renderer *SDLRenderer) cursorX(commandLine *CommandLine) int16 {
 	return int16(cursorX)
 }
 
-func (renderer *SDLRenderer) renderCursor(console *Console) {	
+func (renderer *SDLRenderer) renderCursor(console *Console) {
 	renderer.renderCursorRect(renderer.cursorX(console.CommandLine))
 }
 
-func (renderer *SDLRenderer) render() {	
+func (renderer *SDLRenderer) render() {
 	for _, r := range renderer.updatedRects {
 		renderer.visibleSurface.Blit(&r, renderer.internalSurface, &r)
 	}
@@ -235,7 +235,7 @@ func (renderer *SDLRenderer) render() {
 func (renderer *SDLRenderer) loop() {
 	var ticker *time.Ticker
 	if renderer.FPS > 0 {
-		ticker = time.NewTicker(1e9/int64(renderer.FPS))
+		ticker = time.NewTicker(1e9 / int64(renderer.FPS))
 	} else {
 		ticker = time.NewTicker(1)
 	}
@@ -253,5 +253,5 @@ func (renderer *SDLRenderer) loop() {
 			renderer.render()
 		}
 	}
-		
+
 }

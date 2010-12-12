@@ -15,15 +15,15 @@ const (
 )
 
 var (
-	console *clingon.Console
-	echoer Echoer
-	sdlrenderer *clingon.SDLRenderer
-	appSurface, gopher *sdl.Surface
-	appSurfaceW, appSurfaceH = 640, 480
+	console                                *clingon.Console
+	echoer                                 Echoer
+	sdlrenderer                            *clingon.SDLRenderer
+	appSurface, gopher                     *sdl.Surface
+	appSurfaceW, appSurfaceH               = 640, 480
 	consoleX, consoleY, consoleW, consoleH = int16(40), int16(40), uint16(560), uint16(400)
 )
 
-type Echoer struct {}
+type Echoer struct{}
 
 func (e *Echoer) Run(console *clingon.Console, command string) os.Error {
 	console.Print(command)
@@ -37,7 +37,7 @@ type Interactor interface {
 type EnterCommand struct {
 	console *clingon.Console
 	command string
-	time int64
+	time    int64
 }
 
 func NewEnterCommand(console *clingon.Console, command string, time int64) *EnterCommand {
@@ -47,15 +47,17 @@ func NewEnterCommand(console *clingon.Console, command string, time int64) *Ente
 func (i *EnterCommand) Interact(done chan bool) {
 	for _, c := range i.command {
 		console.CharCh() <- uint16(c)
-		if i.time > 0 { time.Sleep(i.time) }
+		if i.time > 0 {
+			time.Sleep(i.time)
+		}
 	}
 	done <- true
 }
 
 type BrowseHistory struct {
 	console *clingon.Console
-	dirs []int
-	time int64
+	dirs    []int
+	time    int64
 }
 
 func NewBrowseHistory(console *clingon.Console, dirs []int, time int64) *BrowseHistory {
@@ -64,23 +66,28 @@ func NewBrowseHistory(console *clingon.Console, dirs []int, time int64) *BrowseH
 func (i *BrowseHistory) Interact(done chan bool) {
 	for _, dir := range i.dirs {
 		console.ReadlineCh() <- dir
-		if i.time > 0 { time.Sleep(i.time) }
+		if i.time > 0 {
+			time.Sleep(i.time)
+		}
 	}
 	done <- true
 }
 
 type MoveCursor struct {
 	console *clingon.Console
-	dirs []int
-	time int64
+	dirs    []int
+	time    int64
 }
+
 func NewMoveCursor(console *clingon.Console, dirs []int, time int64) *MoveCursor {
 	return &MoveCursor{console, dirs, time}
 }
 func (i *MoveCursor) Interact(done chan bool) {
 	for _, dir := range i.dirs {
 		console.ReadlineCh() <- dir
-		if i.time > 0 { time.Sleep(i.time) }
+		if i.time > 0 {
+			time.Sleep(i.time)
+		}
 	}
 	done <- true
 }
@@ -89,9 +96,11 @@ func Interact(interactions []Interactor) (done bool) {
 	doneCh := make(chan bool)
 	for _, i := range interactions {
 		go i.Interact(doneCh)
-	L: for {
+	L:
+		for {
 			select {
-			case <-doneCh: break L
+			case <-doneCh:
+				break L
 			}
 		}
 	}
@@ -130,7 +139,7 @@ func initTest() {
 			case rects := <-sdlrenderer.UpdatedRectsCh():
 				render(rects)
 			}
-		
+
 		}
 	}()
 }
@@ -142,9 +151,8 @@ func render(updatedRects []sdl.Rect) {
 	} else {
 		for _, r := range updatedRects {
 			appSurface.Blit(&sdl.Rect{r.X + consoleX, r.Y + consoleY, 0, 0}, gopher, &sdl.Rect{r.X + consoleX, r.Y + consoleY, r.W, r.H})
-			appSurface.Blit(&sdl.Rect{consoleX, consoleY, 0, 0}, sdlrenderer.GetSurface(), &sdl.Rect{0,0, consoleW, consoleH})
-			appSurface.UpdateRect(int32(r.X + consoleX), int32(r.Y + consoleY), uint32(r.W), uint32(r.H))
+			appSurface.Blit(&sdl.Rect{consoleX, consoleY, 0, 0}, sdlrenderer.GetSurface(), &sdl.Rect{0, 0, consoleW, consoleH})
+			appSurface.UpdateRect(int32(r.X+consoleX), int32(r.Y+consoleY), uint32(r.W), uint32(r.H))
 		}
 	}
 }
-

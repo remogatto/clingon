@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	appSurface *sdl.Surface
+	appSurface  *sdl.Surface
 	sdlrenderer *SDLRenderer
 )
 
@@ -38,7 +38,7 @@ func initSDL() {
 			case rects := <-sdlrenderer.UpdatedRectsCh():
 				render(rects)
 			}
-		
+
 		}
 	}()
 

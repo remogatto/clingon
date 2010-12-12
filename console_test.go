@@ -10,13 +10,13 @@ var console *Console
 // Renderer mock
 type testRenderer struct {
 	dummyConsoleCh chan *Console
-	dummyBoolCh chan bool
+	dummyBoolCh    chan bool
 }
 
 func (renderer *testRenderer) RenderCommandLineCh() chan<- *Console { return renderer.dummyConsoleCh }
-func (renderer *testRenderer) RenderConsoleCh() chan<- *Console { return renderer.dummyConsoleCh }
-func (renderer *testRenderer) RenderCursorCh() chan<- *Console { return renderer.dummyConsoleCh }
-func (renderer *testRenderer) EnableCursorCh() chan<- bool { return renderer.dummyBoolCh }
+func (renderer *testRenderer) RenderConsoleCh() chan<- *Console     { return renderer.dummyConsoleCh }
+func (renderer *testRenderer) RenderCursorCh() chan<- *Console      { return renderer.dummyConsoleCh }
+func (renderer *testRenderer) EnableCursorCh() chan<- bool          { return renderer.dummyBoolCh }
 
 func NewTestRenderer() *testRenderer {
 	r := &testRenderer{make(chan *Console), make(chan bool)}
@@ -31,7 +31,9 @@ func NewTestRenderer() *testRenderer {
 	return r
 }
 
-type consoleTestSuite struct { pt.Suite }
+type consoleTestSuite struct {
+	pt.Suite
+}
 
 func (s *consoleTestSuite) before() {
 	console = NewConsole(NewTestRenderer(), nil)
@@ -57,7 +59,7 @@ func (s *consoleTestSuite) testCharCh() {
 func (s *consoleTestSuite) testLinesCh() {
 	lines := "foo\nbar\nbaz"
 	console.LinesCh() <- lines
-	
+
 	s.Equal("foo", console.lines.At(0))
 	s.Equal("bar", console.lines.At(1))
 	s.Equal("baz", console.lines.At(2))
@@ -156,5 +158,3 @@ func TestConsole(t *testing.T) {
 		new(consoleTestSuite),
 	)
 }
-
-

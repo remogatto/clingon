@@ -11,26 +11,26 @@ import (
 )
 
 var (
-	config configuration
-	console *clingon.Console
-	sdlrenderer *clingon.SDLRenderer
+	config           configuration
+	console          *clingon.Console
+	sdlrenderer      *clingon.SDLRenderer
 	running, toUpper bool
-	r *renderer
+	r                *renderer
 )
 
 type configuration struct {
-	consoleX, consoleY int16
-	consoleW, consoleH uint16
+	consoleX, consoleY  int16
+	consoleW, consoleH  uint16
 	fullscreen, verbose bool
-	fps float
-	bgImage string
+	fps                 float
+	bgImage             string
 }
 
 type renderer struct {
-	config *configuration
+	config                                 *configuration
 	appSurface, bgImageSurface, cliSurface *sdl.Surface
-	animateCLI bool
-	t int
+	animateCLI                             bool
+	t                                      int
 }
 
 func (r *renderer) render(updatedRects []sdl.Rect) {
@@ -45,21 +45,21 @@ func (r *renderer) render(updatedRects []sdl.Rect) {
 			for _, rect := range updatedRects {
 				if r.bgImageSurface != nil {
 					r.appSurface.Blit(
-						&sdl.Rect{rect.X + r.config.consoleX, rect.Y + r.config.consoleY, 0, 0}, 
-						r.bgImageSurface, 
+						&sdl.Rect{rect.X + r.config.consoleX, rect.Y + r.config.consoleY, 0, 0},
+						r.bgImageSurface,
 						&sdl.Rect{rect.X + r.config.consoleX, rect.Y + r.config.consoleY, rect.W, rect.H})
 				}
 				r.appSurface.Blit(
 					&sdl.Rect{rect.X + r.config.consoleX, rect.Y + r.config.consoleY, 0, 0},
 					sdlrenderer.GetSurface(), &rect)
-				r.appSurface.UpdateRect(int32(rect.X + r.config.consoleX), int32(rect.Y + r.config.consoleY), uint32(rect.W), uint32(rect.H))
+				r.appSurface.UpdateRect(int32(rect.X+r.config.consoleX), int32(rect.Y+r.config.consoleY), uint32(rect.W), uint32(rect.H))
 			}
 		} else {
-			if !console.Paused { 
+			if !console.Paused {
 				if r.config.consoleY > 40 {
-					r.config.consoleY -= int16(r.t*r.t)
+					r.config.consoleY -= int16(r.t * r.t)
 					r.t++
-					
+
 				}
 				if r.config.consoleY <= 40 {
 					r.t = 0
@@ -68,10 +68,10 @@ func (r *renderer) render(updatedRects []sdl.Rect) {
 				}
 			} else {
 				if r.config.consoleY < 480 {
-					r.config.consoleY += int16(r.t*r.t)
+					r.config.consoleY += int16(r.t * r.t)
 					r.t++
-					
-				} 
+
+				}
 				if r.config.consoleY >= 480 {
 					r.t = 0
 					r.config.consoleY = 480
@@ -129,10 +129,10 @@ func initialize(config *configuration) {
 	console.GreetingText = "Welcome to the CLIngon shell!\n=============================\nPress F10 to toggle/untoggle\n\n"
 
 	r = &renderer{
-	config: config,
-	appSurface: appSurface,
-	cliSurface: sdlrenderer.GetSurface(),
-	bgImageSurface: bgImage,
+		config:         config,
+		appSurface:     appSurface,
+		cliSurface:     sdlrenderer.GetSurface(),
+		bgImageSurface: bgImage,
 	}
 }
 
@@ -165,14 +165,14 @@ func main() {
 	}
 
 	config = configuration{
-	verbose: *verbose,
-	fps: *fps,
-	fullscreen: *fullscreen,
-	bgImage: *bgImage,
-	consoleX: 40,
-	consoleY: 40,
-	consoleW: 560,
-	consoleH: 400,
+		verbose:    *verbose,
+		fps:        *fps,
+		fullscreen: *fullscreen,
+		bgImage:    *bgImage,
+		consoleX:   40,
+		consoleY:   40,
+		consoleW:   560,
+		consoleH:   400,
 	}
 
 	initialize(&config)
@@ -237,11 +237,11 @@ func main() {
 		}
 	}()
 
-	for running { 
+	for running {
 		select {
 		case rects := <-sdlrenderer.UpdatedRectsCh():
 			r.render(rects)
-		} 
+		}
 	}
 
 	sdl.Quit()

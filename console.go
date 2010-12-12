@@ -9,7 +9,7 @@ import (
 
 const (
 	CURSOR_BLINK_TIME = 5e8
-	
+
 	HISTORY_NEXT = iota
 	HISTORY_PREV
 	CURSOR_LEFT
@@ -23,7 +23,7 @@ type Evaluator interface {
 type Renderer interface {
 	// Returns a receive-only channel that receives a Console
 	// instance for updating the command-line
- 	RenderCommandLineCh() chan<- *Console
+	RenderCommandLineCh() chan<- *Console
 	// Returns a receive-only channel that receives a Console
 	// instance for updating the whole console visible area	
 	RenderConsoleCh() chan<- *Console
@@ -53,12 +53,11 @@ type CommandLine struct {
 func NewCommandLine(prompt string) *CommandLine {
 	return &CommandLine{
 
-	Prompt: prompt, 
-	content: new(vector.StringVector), 
-	history: new(vector.Vector), 
-	cursorPosition: 0, 
-	historyCount: 0,
-
+		Prompt:         prompt,
+		content:        new(vector.StringVector),
+		history:        new(vector.Vector),
+		cursorPosition: 0,
+		historyCount:   0,
 	}
 }
 
@@ -163,7 +162,7 @@ func (commandLine *CommandLine) notInHistory(line string) bool {
 		strVector := v.(*vector.StringVector)
 		historyEntry := commandLine.stringVectorToString(strVector)
 		if line == historyEntry {
-			return false 
+			return false
 		}
 	}
 	return true
@@ -180,12 +179,12 @@ type Console struct {
 	lines *vector.StringVector
 
 	// Interfaces
-	renderer Renderer
+	renderer  Renderer
 	evaluator Evaluator
 
 	// Channels
-	charCh chan uint16
-	linesCh chan string
+	charCh     chan uint16
+	linesCh    chan string
 	readlineCh chan int
 
 	backspaceCh, returnCh chan bool
@@ -194,16 +193,16 @@ type Console struct {
 // Initialize a new console object. Renderer and Evaluator objects can
 // be nil.
 func NewConsole(renderer Renderer, evaluator Evaluator) *Console {
-	console :=  &Console{
-	lines: new(vector.StringVector),
-	CommandLine: NewCommandLine("console> "),
-	charCh: make(chan uint16),
-	linesCh: make(chan string),
-	backspaceCh: make(chan bool),
-	returnCh: make(chan bool),
-	readlineCh: make(chan int),
-	renderer: renderer,
-	evaluator: evaluator,
+	console := &Console{
+		lines:       new(vector.StringVector),
+		CommandLine: NewCommandLine("console> "),
+		charCh:      make(chan uint16),
+		linesCh:     make(chan string),
+		backspaceCh: make(chan bool),
+		returnCh:    make(chan bool),
+		readlineCh:  make(chan int),
+		renderer:    renderer,
+		evaluator:   evaluator,
 	}
 	go console.loop()
 	return console
@@ -256,8 +255,8 @@ func (console *Console) LinesCh() chan<- string {
 }
 
 // Client code can send readline-like command to this channel
-// (e.g. history browsing, cursor movements, etc.). Readline's command
-// emulation is incomplete.
+// (e.g. history browsing, cursor movements, etc.). Readline's
+// commands emulation is incomplete.
 func (console *Console) ReadlineCh() chan<- int {
 	return console.readlineCh
 }
@@ -300,20 +299,20 @@ func (console *Console) loop() {
 						console.renderer.RenderCommandLineCh() <- console
 					}
 				}
-				
+
 			case str := <-console.linesCh: // Receive lines of text
 				lines := strings.Split(str, "\n", -1)
 				console.PushLines(lines)
 				if console.renderer != nil {
 					console.renderer.RenderConsoleCh() <- console
 				}
-				
+
 			case readlineCmd := <-console.readlineCh: // Browse history
 				switch readlineCmd {
-					case HISTORY_NEXT, HISTORY_PREV:
+				case HISTORY_NEXT, HISTORY_PREV:
 					console.CommandLine.BrowseHistory(readlineCmd)
 
-					case CURSOR_LEFT, CURSOR_RIGHT:
+				case CURSOR_LEFT, CURSOR_RIGHT:
 					console.CommandLine.MoveCursor(readlineCmd)
 				}
 				if console.renderer != nil {
@@ -329,14 +328,13 @@ func (console *Console) loop() {
 				toggleCursor = !toggleCursor
 			}
 		} else {
-
 			select {
 			case <-console.charCh:
-			case <-console.linesCh: 
+			case <-console.linesCh:
 			case <-console.readlineCh:
 			case <-ticker.C:
 			}
-			
+
 		}
 	}
 }

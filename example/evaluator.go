@@ -9,7 +9,7 @@ import (
 	"clingon"
 )
 
-type ShellEvaluator struct {}
+type ShellEvaluator struct{}
 
 func (eval *ShellEvaluator) Run(console *clingon.Console, command string) os.Error {
 	out, err := system(command, exec.DevNull, exec.Pipe, exec.MergeWithStdout)
