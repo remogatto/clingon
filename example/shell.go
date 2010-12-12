@@ -4,26 +4,93 @@ import (
 	"⚛sdl"
 	"⚛sdl/ttf"
 	"fmt"
+	"flag"
+	"os"
 	"strings"
 	"clingon"
 )
 
 var (
+	config configuration
 	console *clingon.Console
 	sdlrenderer *clingon.SDLRenderer
-	appSurface, gopher *sdl.Surface
 	running, toUpper bool
+	r *renderer
 )
 
-func render(updatedRects []sdl.Rect) {
-	for _, r := range updatedRects {
-		appSurface.Blit(&sdl.Rect{r.X + 40, r.Y + 40, 0, 0}, gopher, &sdl.Rect{r.X + 40, r.Y + 40, r.W, r.H})
-		appSurface.Blit(&sdl.Rect{r.X + 40, r.Y + 40, 0, 0}, sdlrenderer.GetSurface(), &r)
-		appSurface.UpdateRect(int32(r.X + 40), int32(r.Y + 40), uint32(r.W), uint32(r.H))
+type configuration struct {
+	consoleX, consoleY int16
+	consoleW, consoleH uint16
+	fullscreen, verbose bool
+	fps float
+	bgImage string
+}
+
+type renderer struct {
+	config *configuration
+	appSurface, bgImageSurface, cliSurface *sdl.Surface
+	animateCLI bool
+	t int
+}
+
+func (r *renderer) render(updatedRects []sdl.Rect) {
+	if updatedRects == nil { // Initially we must blit the entire surface
+		if r.bgImageSurface != nil {
+			r.appSurface.Blit(nil, r.bgImageSurface, nil)
+		}
+		r.appSurface.Blit(&sdl.Rect{config.consoleX, config.consoleY, 0, 0}, sdlrenderer.GetSurface(), nil)
+		r.appSurface.Flip()
+	} else { // Then we can keep updated only the changed regions
+		if !r.animateCLI {
+			for _, rect := range updatedRects {
+				if r.bgImageSurface != nil {
+					r.appSurface.Blit(
+						&sdl.Rect{rect.X + r.config.consoleX, rect.Y + r.config.consoleY, 0, 0}, 
+						r.bgImageSurface, 
+						&sdl.Rect{rect.X + r.config.consoleX, rect.Y + r.config.consoleY, rect.W, rect.H})
+				}
+				r.appSurface.Blit(
+					&sdl.Rect{rect.X + r.config.consoleX, rect.Y + r.config.consoleY, 0, 0},
+					sdlrenderer.GetSurface(), &rect)
+				r.appSurface.UpdateRect(int32(rect.X + r.config.consoleX), int32(rect.Y + r.config.consoleY), uint32(rect.W), uint32(rect.H))
+			}
+		} else {
+			if !console.Paused { 
+				if r.config.consoleY > 40 {
+					r.config.consoleY -= int16(r.t*r.t)
+					r.t++
+					
+				}
+				if r.config.consoleY <= 40 {
+					r.t = 0
+					r.config.consoleY = 40
+					r.animateCLI = false
+				}
+			} else {
+				if r.config.consoleY < 480 {
+					r.config.consoleY += int16(r.t*r.t)
+					r.t++
+					
+				} 
+				if r.config.consoleY >= 480 {
+					r.t = 0
+					r.config.consoleY = 480
+					r.animateCLI = false
+				}
+			}
+			if r.bgImageSurface != nil {
+				r.appSurface.Blit(nil, r.bgImageSurface, nil)
+			}
+			r.appSurface.Blit(&sdl.Rect{r.config.consoleX, r.config.consoleY, 0, 0}, sdlrenderer.GetSurface(), nil)
+			r.appSurface.Flip()
+		}
 	}
 }
 
-func sdlinit() {
+// Initialization boilerplate
+func initialize(config *configuration) {
+	var bgImage, appSurface *sdl.Surface
+
 	if sdl.Init(sdl.INIT_VIDEO) != 0 {
 		panic(sdl.GetError())
 	}
@@ -32,33 +99,87 @@ func sdlinit() {
 		panic(sdl.GetError())
 	}
 
-	font := ttf.OpenFont("testdata/VeraMono.ttf", 12)
+	font := ttf.OpenFont(flag.Arg(0), 12)
 
 	if font == nil {
 		panic(sdl.GetError())
 	}
 
 	sdl.EnableUNICODE(1)
-	appSurface = sdl.SetVideoMode(640, 480, 32, 0)
-	gopher = sdl.Load("testdata/gopher.jpg")
-	appSurface.Blit(&sdl.Rect{0, 0, 0, 0}, gopher, nil)
 
-	sdlrenderer = clingon.NewSDLRenderer(sdl.CreateRGBSurface(sdl.SRCALPHA, 560, 400, 32, 0, 0, 0, 0), font)
+	if config.fullscreen {
+		appSurface = sdl.SetVideoMode(640, 480, 32, sdl.FULLSCREEN)
+		sdl.ShowCursor(sdl.DISABLE)
+	} else {
+		appSurface = sdl.SetVideoMode(640, 480, 32, 0)
+	}
+	if config.bgImage != "" {
+		bgImage = sdl.Load(config.bgImage)
+	}
+
+	sdlrenderer = clingon.NewSDLRenderer(sdl.CreateRGBSurface(sdl.SRCALPHA, int(config.consoleW), int(config.consoleH), 32, 0, 0, 0, 0), font)
 	sdlrenderer.GetSurface().SetAlpha(sdl.SRCALPHA, 0xaa)
+
+	if config.fps > 0 {
+		sdlrenderer.FPS = config.fps
+	}
 
 	console = clingon.NewConsole(sdlrenderer, &ShellEvaluator{})
 	console.SetPrompt("shell:$ ")
-	if sdlrenderer.GetSurface() != nil {
-		appSurface.Blit(&sdl.Rect{40, 40, 0, 0}, sdlrenderer.GetSurface(), &sdl.Rect{0,0, 560, 400})
-	}
+	console.GreetingText = "Welcome to the CLIngon shell!\n=============================\nPress F10 to toggle/untoggle\n\n"
 
+	r = &renderer{
+	config: config,
+	appSurface: appSurface,
+	cliSurface: sdlrenderer.GetSurface(),
+	bgImageSurface: bgImage,
+	}
 }
 
 func main() {
-	sdlinit()
-	render(nil)
-	appSurface.Flip()
+	// Handle options
+	help := flag.Bool("help", false, "Show usage")
+	verbose := flag.Bool("verbose", false, "Verbose output")
+	fullscreen := flag.Bool("fullscreen", false, "Go fullscreen!")
+	fps := flag.Float("fps", clingon.DEFAULT_SDL_RENDERER_FPS, "Frames per second")
+	bgImage := flag.String("bg-image", "", "Background image file")
+
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "shell - A system shell based on CLIngon (Command Line INterface for Go Nerds\n\n")
+		fmt.Fprintf(os.Stderr, "Usage:\n\n")
+		fmt.Fprintf(os.Stderr, "\tshell [options] <fontfile> \n\n")
+		fmt.Fprintf(os.Stderr, "Options are:\n\n")
+		flag.PrintDefaults()
+	}
+
+	flag.Parse()
+
+	if *help == true {
+		flag.Usage()
+		return
+	}
+
+	if len(flag.Args()) < 1 {
+		flag.Usage()
+		return
+	}
+
+	config = configuration{
+	verbose: *verbose,
+	fps: *fps,
+	fullscreen: *fullscreen,
+	bgImage: *bgImage,
+	consoleX: 40,
+	consoleY: 40,
+	consoleW: 560,
+	consoleH: 400,
+	}
+
+	initialize(&config)
+	r.render(nil)
+
 	running = true
+
 	go func() {
 		for running {
 
@@ -70,24 +191,27 @@ func main() {
 				case sdl.KeyboardEvent:
 					keyName := sdl.GetKeyName(sdl.Key(e.Keysym.Sym))
 
-					fmt.Printf("\n")
-					fmt.Printf("%v: %v", e.Keysym.Sym, ": ", keyName)
+					if config.verbose {
+						fmt.Printf("\n")
+						fmt.Printf("%v: %v", e.Keysym.Sym, ": ", keyName)
 
-					fmt.Printf("%04x ", e.Type)
+						fmt.Printf("%04x ", e.Type)
 
-					for i := 0; i < len(e.Pad0); i++ {
-						fmt.Printf("%02x ", e.Pad0[i])
+						for i := 0; i < len(e.Pad0); i++ {
+							fmt.Printf("%02x ", e.Pad0[i])
+						}
+						fmt.Printf("\n")
+
+						fmt.Printf("Type: %02x Which: %02x State: %02x Pad: %02x\n", e.Type, e.Which, e.State, e.Pad0[0])
+						fmt.Printf("Scancode: %02x Sym: %08x Mod: %04x Unicode: %04x\n", e.Keysym.Scancode, e.Keysym.Sym, e.Keysym.Mod, e.Keysym.Unicode)
 					}
-					fmt.Printf("\n")
-
-					fmt.Printf("Type: %02x Which: %02x State: %02x Pad: %02x\n", e.Type, e.Which, e.State, e.Pad0[0])
-					fmt.Printf("Scancode: %02x Sym: %08x Mod: %04x Unicode: %04x\n", e.Keysym.Scancode, e.Keysym.Sym, e.Keysym.Mod, e.Keysym.Unicode)
-
 					if (keyName == "escape") && (e.Type == sdl.KEYDOWN) {
-						fmt.Printf("escape key -> request[exit the application]\n")
 						running = false
 					} else if (keyName == "left shift") && (e.Type == sdl.KEYDOWN) {
 						toUpper = true
+					} else if (keyName == "f10") && (e.Type == sdl.KEYDOWN) {
+						console.Paused = !console.Paused
+						r.animateCLI = true
 					} else if (keyName == "up") && (e.Type == sdl.KEYDOWN) {
 						console.HistoryCh() <- clingon.HISTORY_PREV
 					} else if (keyName == "down") && (e.Type == sdl.KEYDOWN) {
@@ -116,10 +240,9 @@ func main() {
 	for running { 
 		select {
 		case rects := <-sdlrenderer.UpdatedRectsCh():
-			render(rects)
+			r.render(rects)
 		} 
 	}
 
-	ttf.Quit()
 	sdl.Quit()
 }

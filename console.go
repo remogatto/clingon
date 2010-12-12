@@ -169,8 +169,12 @@ func (commandLine *CommandLine) notInHistory(line string) bool {
 }
 
 type Console struct {
+	// An instance of the command-line
 	CommandLine *CommandLine
+	// Pause/unpause the console
 	Paused bool
+	// Greeting message
+	GreetingText string
 
 	lines *vector.StringVector
 
@@ -183,9 +187,11 @@ type Console struct {
 	linesCh chan string
 	historyCh, cursorCh chan int
 
-	backspaceCh, returnCh, pauseCh, renderingDone chan bool
+	backspaceCh, returnCh chan bool
 }
 
+// Initialize a new console object. Renderer and Evaluator objects can
+// be nil.
 func NewConsole(renderer Renderer, evaluator Evaluator) *Console {
 	console :=  &Console{
 	lines: new(vector.StringVector),
@@ -196,8 +202,6 @@ func NewConsole(renderer Renderer, evaluator Evaluator) *Console {
 	returnCh: make(chan bool),
 	historyCh: make(chan int),
 	cursorCh: make(chan int),
-	pauseCh: make(chan bool),
-	renderingDone: make(chan bool),
 	renderer: renderer,
 	evaluator: evaluator,
 	}
@@ -219,10 +223,12 @@ func (console *Console) Return() string {
 
 // Print a string on the console
 func (console *Console) Print(str string) {
-	console.PushLines(strings.Split(str, "\n", -1))
+	if str != "" {
+		console.PushLines(strings.Split(str, "\n", -1))
+	}
 }
 
-// Push lines
+// Push lines of text
 func (console *Console) PushLines(lines []string) {
 	for _, line := range lines {
 		console.lines.Push(line)
@@ -264,9 +270,11 @@ func (console *Console) loop() {
 	var toggleCursor bool
 	ticker := time.NewTicker(CURSOR_BLINK_TIME)
 
-	// Render the prompt before starting the loop
+	// Render the prompt and greeting text before starting the
+	// loop
 	if console.renderer != nil {
-		console.renderer.RenderCommandLineCh() <- console
+		console.Print(console.GreetingText)
+		console.renderer.RenderConsoleCh() <- console
 	}
 
 	for {

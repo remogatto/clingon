@@ -120,6 +120,9 @@ func initTest() {
 	sdlrenderer.GetSurface().SetAlpha(sdl.SRCALPHA, 0xaa)
 
 	console = clingon.NewConsole(sdlrenderer, &Echoer{})
+	console.GreetingText = "Welcome to the CLIngon shell!\n\n"
+
+	render(nil)
 
 	go func() {
 		for {
@@ -130,7 +133,6 @@ func initTest() {
 		
 		}
 	}()
-	render(nil)
 }
 
 func render(updatedRects []sdl.Rect) {
