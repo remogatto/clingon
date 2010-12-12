@@ -213,13 +213,13 @@ func main() {
 						console.Paused = !console.Paused
 						r.animateCLI = true
 					} else if (keyName == "up") && (e.Type == sdl.KEYDOWN) {
-						console.HistoryCh() <- clingon.HISTORY_PREV
+						console.ReadlineCh() <- clingon.HISTORY_PREV
 					} else if (keyName == "down") && (e.Type == sdl.KEYDOWN) {
-						console.HistoryCh() <- clingon.HISTORY_NEXT
+						console.ReadlineCh() <- clingon.HISTORY_NEXT
 					} else if (keyName == "left") && (e.Type == sdl.KEYDOWN) {
-						console.CursorCh() <- clingon.CURSOR_LEFT
+						console.ReadlineCh() <- clingon.CURSOR_LEFT
 					} else if (keyName == "right") && (e.Type == sdl.KEYDOWN) {
-						console.CursorCh() <- clingon.CURSOR_RIGHT
+						console.ReadlineCh() <- clingon.CURSOR_RIGHT
 					} else {
 						unicode := e.Keysym.Unicode
 						if unicode > 0 {
