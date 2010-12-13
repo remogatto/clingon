@@ -8,6 +8,7 @@ import (
 	"math"
 	"os"
 	"clingon"
+	"time"
 )
 
 var (
@@ -30,12 +31,11 @@ type renderer struct {
 	config                                 *configuration
 	appSurface, bgImageSurface, cliSurface *sdl.Surface
 	animateCLI                             bool
-	t                                      float64
+	t0                                     int64 // Start of animation, in nanoseconds
 }
 
-const (
-	animation_step = math.Pi / 50
-)
+// Duration of the animation, in nanoseconds
+const animation_time = 500 * 1e6
 
 func (r *renderer) render(updatedRects []sdl.Rect) {
 	if updatedRects == nil { // Initially we must blit the entire surface
@@ -59,23 +59,22 @@ func (r *renderer) render(updatedRects []sdl.Rect) {
 				r.appSurface.UpdateRect(int32(rect.X+r.config.consoleX), int32(rect.Y+r.config.consoleY), uint32(rect.W), uint32(rect.H))
 			}
 		} else {
+			var time_diff int64 = time.Nanoseconds() - r.t0
 			if !console.Paused {
-				if r.config.consoleY > 40 {
-					r.config.consoleY = 40 + int16((480-40+1)*(1-math.Cos(r.t)))
-					r.t -= animation_step
-				}
-				if r.config.consoleY <= 40 {
-					r.t = 0
+				if time_diff < animation_time {
+					arc := (1 - float64(time_diff)/animation_time) * (math.Pi / 2)
+					r.config.consoleY = 40 + int16((480-40)*(1-math.Cos(arc)))
+				} else {
+					r.t0 = 0
 					r.config.consoleY = 40
 					r.animateCLI = false
 				}
 			} else {
-				if r.config.consoleY < 480 {
-					r.config.consoleY = 40 + int16((480-40+1)*(1-math.Cos(r.t)))
-					r.t += animation_step
-				}
-				if r.config.consoleY >= 480 {
-					r.t = (math.Pi / 2)
+				if time_diff < animation_time {
+					arc := (float64(time_diff) / animation_time) * (math.Pi / 2)
+					r.config.consoleY = 40 + int16((480-40)*(1-math.Cos(arc)))
+				} else {
+					r.t0 = 0
 					r.config.consoleY = 480
 					r.animateCLI = false
 				}
@@ -212,6 +211,12 @@ func main() {
 					} else if (keyName == "f10") && (e.Type == sdl.KEYDOWN) {
 						console.Paused = !console.Paused
 						r.animateCLI = true
+						if r.t0 == 0 {
+							r.t0 = time.Nanoseconds()
+						} else {
+							t := time.Nanoseconds()
+							r.t0 = t - (animation_time - (t - r.t0))
+						}
 					} else if (keyName == "up") && (e.Type == sdl.KEYDOWN) {
 						console.ReadlineCh() <- clingon.HISTORY_PREV
 					} else if (keyName == "down") && (e.Type == sdl.KEYDOWN) {

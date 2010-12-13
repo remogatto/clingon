@@ -7,7 +7,7 @@ import (
 	"unsafe"
 )
 
-const DEFAULT_SDL_RENDERER_FPS = 20.0
+const DEFAULT_SDL_RENDERER_FPS = 30.0
 
 type metrics struct {
 	// Surface width, height
