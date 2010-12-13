@@ -8,13 +8,13 @@ fits your needs.
 Clingon exploits a fully concurrent and (hopefully) clean
 design. Basically, there are two goroutine running in parallel:
 
-* The console goroutine: it exposes command-line functionalities to
-  client code. Client code sends characters and commands to this
-  goroutine in order to modify the console state.
+* The console goroutine exposes command-line functionalities to client
+  code. Client code sends characters and commands to this goroutine in
+  order to modify the console state.
 
-* The renderer goroutine: it receives console instances (forwarded by
-  the console goroutine) in order to render a graphical representation
-  of the console state.
+* The renderer goroutine receives console instances (forwarded by the
+  console goroutine) in order to render a graphical representation of
+  the console state.
 
 <pre>
  +---------------+	      +---------------+
@@ -39,9 +39,11 @@ rendering backend allows for non-blocking graphical effects. For
 example, there could be a nice non-blocking scrolling effect happening
 on newline events.
 
-Clingon tries to emulate readline-like functionalities for line
-editing. At the moment, only a subset of the whole readline commands
-are available. See the Features section for more details.
+Clingon tries to emulate a part of readline-like functionalities for
+line editing. At the moment, only a very small subset of the whole
+readline commands are available. However, clingon will never offer a
+complete readline emulation as it's simply not needed in games. See
+the Features section for more details.
 
 Clingon is renderer-agnostic. Currently, only an SDL renderer is
 available in the package. But it should not be difficult to add
@@ -51,8 +53,9 @@ different backends (e.g. opengl, draw/x11, etc.)
 
 * Concurrent design
 * Graphical backend agnostic (currently an SDL renderer is included)
-* Readline-like commands (left/right cursor movements, command
-  history, etc.)
+* Readline-like commands
+** left/right cursor movements
+** up/down history browsing
 
 # Installation
 
@@ -90,6 +93,12 @@ folder:
 
     cd clingon
     examples/shell -bg-image testdata/gopher.jpg testdata/VeraMono.ttf
+
+# TODO
+
+* Improve readline emulation adding more commands 
+* Add new rendering backends
+* Add graphical effects
 
 # Video
 
