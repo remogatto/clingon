@@ -8,6 +8,7 @@ import (
 	"math"
 	"os"
 	"clingon"
+	"time"
 )
 
 var (
@@ -30,12 +31,10 @@ type renderer struct {
 	config                                 *configuration
 	appSurface, bgImageSurface, cliSurface *sdl.Surface
 	animateCLI                             bool
-	t                                      float64
+	t0                                     int64 // Start of animation, in nanoseconds
 }
 
-const (
-	ANIMATION_STEP = math.Pi / 50
-)
+const ANIMATION_TIME = 500 * 1e6
 
 func (r *renderer) render(updatedRects []sdl.Rect) {
 	if updatedRects == nil { // Initially we blit the entire surface
@@ -59,23 +58,22 @@ func (r *renderer) render(updatedRects []sdl.Rect) {
 				r.appSurface.UpdateRect(int32(rect.X+r.config.consoleX), int32(rect.Y+r.config.consoleY), uint32(rect.W), uint32(rect.H))
 			}
 		} else {
+			var time_diff int64 = time.Nanoseconds() - r.t0
 			if !console.Paused {
-				if r.config.consoleY > 40 {
-					r.config.consoleY = 40 + int16((480-40+1)*(1-math.Cos(r.t)))
-					r.t -= ANIMATION_STEP
-				}
-				if r.config.consoleY <= 40 {
-					r.t = 0
+				if time_diff < ANIMATION_TIME {
+					arc := (1 - float64(time_diff)/ANIMATION_TIME) * (math.Pi / 2)
+					r.config.consoleY = 40 + int16((480-40)*(1-math.Cos(arc)))
+				} else {
+					r.t0 = 0
 					r.config.consoleY = 40
 					r.animateCLI = false
 				}
 			} else {
-				if r.config.consoleY < 480 {
-					r.config.consoleY = 40 + int16((480-40+1)*(1-math.Cos(r.t)))
-					r.t += ANIMATION_STEP
-				}
-				if r.config.consoleY >= 480 {
-					r.t = (math.Pi / 2)
+				if time_diff < ANIMATION_TIME {
+					arc := (float64(time_diff) / ANIMATION_TIME) * (math.Pi / 2)
+					r.config.consoleY = 40 + int16((480-40)*(1-math.Cos(arc)))
+				} else {
+					r.t0 = 0
 					r.config.consoleY = 480
 					r.animateCLI = false
 				}
@@ -214,6 +212,12 @@ func main() {
 					} else if (keyName == "f10") && (e.Type == sdl.KEYDOWN) {
 						console.Paused = !console.Paused
 						r.animateCLI = true
+						if r.t0 == 0 {
+							r.t0 = time.Nanoseconds()
+						} else {
+							t := time.Nanoseconds()
+							r.t0 = t - (ANIMATION_TIME - (t - r.t0))
+						}
 						if config.autoFps {
 							sdlrenderer.FPSCh() <- config.fps * 2
 						}
