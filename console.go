@@ -24,15 +24,21 @@ type Renderer interface {
 	// Returns a receive-only channel that receives a Console
 	// instance for updating the command-line
 	RenderCommandLineCh() chan<- *Console
+
 	// Returns a receive-only channel that receives a Console
 	// instance for updating the whole console visible area	
 	RenderConsoleCh() chan<- *Console
+
 	// Tell the renderer to render the cursor at current position
 	// by sending a console instance
 	RenderCursorCh() chan<- *Console
+
 	// Tell the renderer to enable/disable the cursor at current
 	// position by sending a bool value
 	EnableCursorCh() chan<- bool
+
+	// Tell the renderer to change its FPS (frames per second)
+	FPSCh() chan<- float
 }
 
 type CommandLine struct {

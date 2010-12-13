@@ -5,17 +5,17 @@ import (
 	"⚛sdl/ttf"
 	"fmt"
 	"flag"
+	"math"
 	"os"
-	"strings"
 	"clingon"
 )
 
 var (
-	config           configuration
-	console          *clingon.Console
-	sdlrenderer      *clingon.SDLRenderer
-	running, toUpper bool
-	r                *renderer
+	config      configuration
+	console     *clingon.Console
+	sdlrenderer *clingon.SDLRenderer
+	running     bool
+	r           *renderer
 )
 
 type configuration struct {
@@ -30,8 +30,12 @@ type renderer struct {
 	config                                 *configuration
 	appSurface, bgImageSurface, cliSurface *sdl.Surface
 	animateCLI                             bool
-	t                                      int
+	t                                      float64
 }
+
+const (
+	animation_step = math.Pi / 50
+)
 
 func (r *renderer) render(updatedRects []sdl.Rect) {
 	if updatedRects == nil { // Initially we must blit the entire surface
@@ -57,9 +61,8 @@ func (r *renderer) render(updatedRects []sdl.Rect) {
 		} else {
 			if !console.Paused {
 				if r.config.consoleY > 40 {
-					r.config.consoleY -= int16(r.t * r.t)
-					r.t++
-
+					r.config.consoleY = 40 + int16((480-40+1)*(1-math.Cos(r.t)))
+					r.t -= animation_step
 				}
 				if r.config.consoleY <= 40 {
 					r.t = 0
@@ -68,12 +71,11 @@ func (r *renderer) render(updatedRects []sdl.Rect) {
 				}
 			} else {
 				if r.config.consoleY < 480 {
-					r.config.consoleY += int16(r.t * r.t)
-					r.t++
-
+					r.config.consoleY = 40 + int16((480-40+1)*(1-math.Cos(r.t)))
+					r.t += animation_step
 				}
 				if r.config.consoleY >= 480 {
-					r.t = 0
+					r.t = (math.Pi / 2)
 					r.config.consoleY = 480
 					r.animateCLI = false
 				}
@@ -121,7 +123,7 @@ func initialize(config *configuration) {
 	sdlrenderer.GetSurface().SetAlpha(sdl.SRCALPHA, 0xaa)
 
 	if config.fps > 0 {
-		sdlrenderer.FPS = config.fps
+		sdlrenderer.FPSCh() <- config.fps
 	}
 
 	console = clingon.NewConsole(sdlrenderer, &ShellEvaluator{})
@@ -207,8 +209,6 @@ func main() {
 					}
 					if (keyName == "escape") && (e.Type == sdl.KEYDOWN) {
 						running = false
-					} else if (keyName == "left shift") && (e.Type == sdl.KEYDOWN) {
-						toUpper = true
 					} else if (keyName == "f10") && (e.Type == sdl.KEYDOWN) {
 						console.Paused = !console.Paused
 						r.animateCLI = true
@@ -223,11 +223,7 @@ func main() {
 					} else {
 						unicode := e.Keysym.Unicode
 						if unicode > 0 {
-							if toUpper {
-								console.CharCh() <- uint16([]int(strings.ToUpper(string(unicode)))[0])
-							} else {
-								console.CharCh() <- unicode
-							}
+							console.CharCh() <- unicode
 						}
 					}
 

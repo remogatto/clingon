@@ -40,8 +40,8 @@ func (m *metrics) calcCommandLineRect() *sdl.Rect {
 }
 
 type SDLRenderer struct {
-	// Frame per-second
-	FPS float
+	// Frame per-second, greater than 0
+	fps float
 	// Activate/deactivate blended text rendering. By default use
 	// solid text rendering
 	Blended bool
@@ -55,6 +55,7 @@ type SDLRenderer struct {
 	cursorOn                                             bool
 	renderCommandLineCh, renderConsoleCh, renderCursorCh chan *Console
 	enableCursorCh                                       chan bool
+	fpsCh                                                chan float
 	updatedRects                                         []sdl.Rect
 	updatedRectsCh                                       chan []sdl.Rect
 }
@@ -64,7 +65,7 @@ func NewSDLRenderer(surface *sdl.Surface, font *ttf.Font) *SDLRenderer {
 	surface.GetClipRect(rect)
 
 	renderer := &SDLRenderer{
-		FPS:                 DEFAULT_SDL_RENDERER_FPS,
+		fps:                 DEFAULT_SDL_RENDERER_FPS,
 		Color:               sdl.Color{255, 255, 255, 0},
 		internalSurface:     sdl.CreateRGBSurface(sdl.SWSURFACE, int(surface.W), int(surface.H), 32, 0, 0, 0, 0),
 		visibleSurface:      surface,
@@ -73,6 +74,7 @@ func NewSDLRenderer(surface *sdl.Surface, font *ttf.Font) *SDLRenderer {
 		renderConsoleCh:     make(chan *Console),
 		renderCursorCh:      make(chan *Console),
 		enableCursorCh:      make(chan bool),
+		fpsCh:               make(chan float),
 		updatedRects:        make([]sdl.Rect, 0),
 		updatedRectsCh:      make(chan []sdl.Rect),
 	}
@@ -110,6 +112,10 @@ func (renderer *SDLRenderer) EnableCursorCh() chan<- bool {
 
 func (renderer *SDLRenderer) RenderCursorCh() chan<- *Console {
 	return renderer.renderCursorCh
+}
+
+func (renderer *SDLRenderer) FPSCh() chan<- float {
+	return renderer.fpsCh
 }
 
 func (renderer *SDLRenderer) UpdatedRectsCh() <-chan []sdl.Rect {
@@ -233,22 +239,30 @@ func (renderer *SDLRenderer) render() {
 }
 
 func (renderer *SDLRenderer) loop() {
-	var ticker *time.Ticker
-	if renderer.FPS > 0 {
-		ticker = time.NewTicker(1e9 / int64(renderer.FPS))
-	} else {
-		ticker = time.NewTicker(1)
-	}
+	var ticker *time.Ticker = time.NewTicker(int64(1e9 / renderer.fps))
+
 	for {
 		select {
 		case console := <-renderer.renderCommandLineCh:
 			renderer.renderCommandLine(console)
+
 		case console := <-renderer.renderConsoleCh:
 			renderer.renderConsole(console)
+
 		case enableCursor := <-renderer.enableCursorCh:
 			renderer.enableCursor(enableCursor)
+
 		case console := <-renderer.renderCursorCh:
 			renderer.renderCursor(console)
+
+		case fps := <-renderer.fpsCh:
+			ticker.Stop()
+			if fps <= 0 {
+				fps = DEFAULT_SDL_RENDERER_FPS
+			}
+			renderer.fps = fps
+			ticker = time.NewTicker(int64(1e9 / fps))
+
 		case <-ticker.C:
 			renderer.render()
 		}
