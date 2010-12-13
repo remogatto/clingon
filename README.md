@@ -104,6 +104,12 @@ folder:
 
 * [Clingon demo](http://www.youtube.com/watch?v=nee3BOtvUCE)
 
+# Credits
+
+I'd like to thanks the following people for the contribute they give to this project:
+
+* [⚛](https://github.com/0xe2-0x9a-0x9b)
+
 # License
 
 Copyright (c) 2010 Andrea Fazzi
