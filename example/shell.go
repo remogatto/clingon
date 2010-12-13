@@ -34,17 +34,17 @@ type renderer struct {
 }
 
 const (
-	animation_step = math.Pi / 50
+	ANIMATION_STEP = math.Pi / 50
 )
 
 func (r *renderer) render(updatedRects []sdl.Rect) {
-	if updatedRects == nil { // Initially we must blit the entire surface
+	if updatedRects == nil { // Initially we blit the entire surface
 		if r.bgImageSurface != nil {
 			r.appSurface.Blit(nil, r.bgImageSurface, nil)
 		}
 		r.appSurface.Blit(&sdl.Rect{config.consoleX, config.consoleY, 0, 0}, sdlrenderer.GetSurface(), nil)
 		r.appSurface.Flip()
-	} else { // Then we can keep updated only the changed regions
+	} else { // Then we can keep updating modified regions only
 		if !r.animateCLI {
 			for _, rect := range updatedRects {
 				if r.bgImageSurface != nil {
@@ -62,7 +62,7 @@ func (r *renderer) render(updatedRects []sdl.Rect) {
 			if !console.Paused {
 				if r.config.consoleY > 40 {
 					r.config.consoleY = 40 + int16((480-40+1)*(1-math.Cos(r.t)))
-					r.t -= animation_step
+					r.t -= ANIMATION_STEP
 				}
 				if r.config.consoleY <= 40 {
 					r.t = 0
@@ -72,7 +72,7 @@ func (r *renderer) render(updatedRects []sdl.Rect) {
 			} else {
 				if r.config.consoleY < 480 {
 					r.config.consoleY = 40 + int16((480-40+1)*(1-math.Cos(r.t)))
-					r.t += animation_step
+					r.t += ANIMATION_STEP
 				}
 				if r.config.consoleY >= 480 {
 					r.t = (math.Pi / 2)

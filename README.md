@@ -3,7 +3,7 @@
 Clingon is a Go library that helps in creating a command-line
 interface (CLI) à la Quake. Can't wait to see how does it look? Watch
 this [video](http://www.youtube.com/watch?v=nee3BOtvUCE) and see if it
-fits your needs.
+is worth reading below.
 
 Clingon exploits a fully concurrent and (hopefully) clean
 design. Basically, there are two goroutine running in parallel:
@@ -92,7 +92,7 @@ After installing the package try the sample code in <tt>example/</tt>
 folder:
 
     cd clingon
-    examples/shell -bg-image testdata/gopher.jpg testdata/VeraMono.ttf
+    examples/shell -auto-fps -bg-image testdata/gopher.jpg testdata/VeraMono.ttf
 
 # TODO
 
