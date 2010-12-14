@@ -22,7 +22,7 @@ var (
 type configuration struct {
 	consoleX, consoleY  int16
 	consoleW, consoleH  uint16
-	fullscreen, verbose, autoFps bool
+	fullscreen, verbose bool
 	fps                 float
 	bgImage             string
 }
@@ -142,7 +142,6 @@ func main() {
 	verbose := flag.Bool("verbose", false, "Verbose output")
 	fullscreen := flag.Bool("fullscreen", false, "Go fullscreen!")
 	fps := flag.Float("fps", clingon.DEFAULT_SDL_RENDERER_FPS, "Frames per second")
-	autoFps := flag.Bool("auto-fps", false, "Automatically double the FPS ratio on animations")
 	bgImage := flag.String("bg-image", "", "Background image file")
 
 	flag.Usage = func() {
@@ -168,7 +167,6 @@ func main() {
 	config = configuration{
 		verbose:    *verbose,
 		fps:        *fps,
-                autoFps: *autoFps,
 		fullscreen: *fullscreen,
 		bgImage:    *bgImage,
 		consoleX:   40,
@@ -217,9 +215,6 @@ func main() {
 						} else {
 							t := time.Nanoseconds()
 							r.t0 = t - (ANIMATION_TIME - (t - r.t0))
-						}
-						if config.autoFps {
-							sdlrenderer.FPSCh() <- config.fps * 2
 						}
 					} else if (keyName == "up") && (e.Type == sdl.KEYDOWN) {
 						console.ReadlineCh() <- clingon.HISTORY_PREV
