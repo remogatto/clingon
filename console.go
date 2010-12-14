@@ -36,9 +36,6 @@ type Renderer interface {
 	// Tell the renderer to enable/disable the cursor at current
 	// position by sending a bool value
 	EnableCursorCh() chan<- bool
-
-	// Tell the renderer to change its FPS (frames per second)
-	FPSCh() chan<- float
 }
 
 type CommandLine struct {

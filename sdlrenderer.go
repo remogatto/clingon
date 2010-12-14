@@ -114,6 +114,7 @@ func (renderer *SDLRenderer) RenderCursorCh() chan<- *Console {
 	return renderer.renderCursorCh
 }
 
+// Tell the renderer to change its FPS (frames per second)
 func (renderer *SDLRenderer) FPSCh() chan<- float {
 	return renderer.fpsCh
 }
