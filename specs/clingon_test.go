@@ -20,6 +20,7 @@ func (s *specsSuite) afterAll() {
 }
 
 func (s *specsSuite) should_receive_commands() {
+	s.True(Interact([]Interactor{NewEnterCommand(console, "", 2e8)}))
 	s.True(Interact([]Interactor{NewEnterCommand(console, "Hello gopher!", 2e8)}))
 }
 
