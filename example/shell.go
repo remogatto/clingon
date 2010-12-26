@@ -147,7 +147,7 @@ func main() {
 		consoleY:          40,
 		consoleW:          560,
 		consoleH:          400,
-		animationDuration: 1e9,
+		animationDuration: 500*1e6,
 	}
 
 	initialize(&config)
@@ -193,7 +193,7 @@ func main() {
 							if t == 0 {
 								slideUp.Start()
 							} else {
-								slideUp.Resume(1e9 - t)
+								slideUp.Resume(config.animationDuration - t)
 							}
 						}
 					} else if (keyName == "up") && (e.Type == sdl.KEYDOWN) {
