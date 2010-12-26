@@ -46,7 +46,7 @@ complete readline emulation as it's simply not needed in games. See
 the Features section for more details.
 
 Clingon is renderer-agnostic. Currently, only an SDL renderer is
-available in the package. But it should not be difficult to add
+available in the package but it should not be difficult to add
 different backends (e.g. opengl, draw/x11, etc.)
 
 # Features
@@ -106,7 +106,8 @@ folder:
 
 # Credits
 
-I'd like to thanks the following people for the contribute they give to this project:
+Thanks to the following people for the contribute they give to this
+project:
 
 * [⚛](https://github.com/0xe2-0x9a-0x9b)
 
