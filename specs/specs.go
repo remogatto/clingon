@@ -21,6 +21,11 @@ var (
 	appSurface, gopher                     *sdl.Surface
 	appSurfaceW, appSurfaceH               = 640, 480
 	consoleX, consoleY, consoleW, consoleH = int16(40), int16(40), uint16(560), uint16(400)
+	distance                               = float64(uint16(appSurfaceH) - (uint16(appSurfaceH)-consoleH)/2)
+	finished                               bool
+
+	slideUp, slideDown = clingon.NewSlidingAnimation(1e9, distance), clingon.NewSlidingAnimation(1e9, distance)
+	terminateRendering = make(chan bool)
 )
 
 type Echoer struct{}
@@ -131,22 +136,32 @@ func initTest() {
 	console = clingon.NewConsole(sdlrenderer, &Echoer{})
 	console.GreetingText = "Welcome to the CLIngon shell!\n\n"
 
-	render(nil)
+	render(nil, consoleY)
 
 	go func() {
+		var y float64
 		for {
 			select {
+			case <-terminateRendering:
+				return
+			case y = <-slideDown.ValueCh():
+				console.Paused = true
+				render(nil, consoleY+int16(y))
+			case y = <-slideUp.ValueCh():
+				console.Paused = true
+				render(nil, int16(appSurfaceH)-int16(y))
 			case rects := <-sdlrenderer.UpdatedRectsCh():
-				render(rects)
+				render(rects, int16(y))
 			}
 
 		}
 	}()
 }
 
-func render(updatedRects []sdl.Rect) {
+func render(updatedRects []sdl.Rect, y int16) {
 	if updatedRects == nil {
 		appSurface.Blit(nil, gopher, nil)
+		appSurface.Blit(&sdl.Rect{consoleX, y, 0, 0}, sdlrenderer.GetSurface(), nil)
 		appSurface.Flip()
 	} else {
 		for _, r := range updatedRects {

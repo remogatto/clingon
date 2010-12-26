@@ -5,18 +5,17 @@ import (
 	"⚛sdl/ttf"
 	"fmt"
 	"flag"
-	"math"
 	"os"
 	"clingon"
-	"time"
 )
 
 var (
-	config      configuration
-	console     *clingon.Console
-	sdlrenderer *clingon.SDLRenderer
-	running     bool
-	r           *renderer
+	config                   configuration
+	console                  *clingon.Console
+	sdlrenderer              *clingon.SDLRenderer
+	running, toggleAnimation bool
+	r                        *renderer
+	sliding                  *clingon.Animation
 )
 
 type configuration struct {
@@ -30,59 +29,29 @@ type configuration struct {
 type renderer struct {
 	config                                 *configuration
 	appSurface, bgImageSurface, cliSurface *sdl.Surface
-	animateCLI                             bool
-	t0                                     int64 // Start of animation, in nanoseconds
 }
 
 const ANIMATION_TIME = 500 * 1e6
 
-func (r *renderer) render(updatedRects []sdl.Rect) {
-	if updatedRects == nil { // Initially we blit the entire surface
+func (r *renderer) render(updatedRects []sdl.Rect, y int16) {
+	if updatedRects == nil { // Initially and during animations we blit the entire surface
 		if r.bgImageSurface != nil {
 			r.appSurface.Blit(nil, r.bgImageSurface, nil)
 		}
-		r.appSurface.Blit(&sdl.Rect{config.consoleX, config.consoleY, 0, 0}, sdlrenderer.GetSurface(), nil)
+		r.appSurface.Blit(&sdl.Rect{config.consoleX, y, 0, 0}, sdlrenderer.GetSurface(), nil)
 		r.appSurface.Flip()
-	} else { // Then we can keep updating modified regions only
-		if !r.animateCLI {
-			for _, rect := range updatedRects {
-				if r.bgImageSurface != nil {
-					r.appSurface.Blit(
-						&sdl.Rect{rect.X + r.config.consoleX, rect.Y + r.config.consoleY, 0, 0},
-						r.bgImageSurface,
-						&sdl.Rect{rect.X + r.config.consoleX, rect.Y + r.config.consoleY, rect.W, rect.H})
-				}
-				r.appSurface.Blit(
-					&sdl.Rect{rect.X + r.config.consoleX, rect.Y + r.config.consoleY, 0, 0},
-					sdlrenderer.GetSurface(), &rect)
-				r.appSurface.UpdateRect(int32(rect.X+r.config.consoleX), int32(rect.Y+r.config.consoleY), uint32(rect.W), uint32(rect.H))
-			}
-		} else {
-			var time_diff int64 = time.Nanoseconds() - r.t0
-			if !console.Paused {
-				if time_diff < ANIMATION_TIME {
-					arc := (1 - float64(time_diff)/ANIMATION_TIME) * (math.Pi / 2)
-					r.config.consoleY = 40 + int16((480-40)*(1-math.Cos(arc)))
-				} else {
-					r.t0 = 0
-					r.config.consoleY = 40
-					r.animateCLI = false
-				}
-			} else {
-				if time_diff < ANIMATION_TIME {
-					arc := (float64(time_diff) / ANIMATION_TIME) * (math.Pi / 2)
-					r.config.consoleY = 40 + int16((480-40)*(1-math.Cos(arc)))
-				} else {
-					r.t0 = 0
-					r.config.consoleY = 480
-					r.animateCLI = false
-				}
-			}
+	} else { // When idle we can keep updating modified regions only
+		for _, rect := range updatedRects {
 			if r.bgImageSurface != nil {
-				r.appSurface.Blit(nil, r.bgImageSurface, nil)
+				r.appSurface.Blit(
+					&sdl.Rect{rect.X + r.config.consoleX, rect.Y + y, 0, 0},
+					r.bgImageSurface,
+					&sdl.Rect{rect.X + r.config.consoleX, rect.Y + y, rect.W, rect.H})
 			}
-			r.appSurface.Blit(&sdl.Rect{r.config.consoleX, r.config.consoleY, 0, 0}, sdlrenderer.GetSurface(), nil)
-			r.appSurface.Flip()
+			r.appSurface.Blit(
+				&sdl.Rect{rect.X + r.config.consoleX, rect.Y + y, 0, 0},
+				sdlrenderer.GetSurface(), &rect)
+			r.appSurface.UpdateRect(int32(rect.X+r.config.consoleX), int32(rect.Y+y), uint32(rect.W), uint32(rect.H))
 		}
 	}
 }
@@ -134,6 +103,8 @@ func initialize(config *configuration) {
 		cliSurface:     sdlrenderer.GetSurface(),
 		bgImageSurface: bgImage,
 	}
+
+	sliding = clingon.NewSlidingAnimation(1e9, float64(int16(appSurface.H)-config.consoleY))
 }
 
 func main() {
@@ -141,7 +112,7 @@ func main() {
 	help := flag.Bool("help", false, "Show usage")
 	verbose := flag.Bool("verbose", false, "Verbose output")
 	fullscreen := flag.Bool("fullscreen", false, "Go fullscreen!")
-	fps := flag.Float("fps", clingon.DEFAULT_SDL_RENDERER_FPS, "Frames per second")
+	fps := flag.Float("fps", clingon.DEFAULT_CONSOLE_RENDERER_FPS, "Frames per second")
 	bgImage := flag.String("bg-image", "", "Background image file")
 
 	flag.Usage = func() {
@@ -176,7 +147,7 @@ func main() {
 	}
 
 	initialize(&config)
-	r.render(nil)
+	r.render(nil, config.consoleY)
 
 	running = true
 
@@ -208,14 +179,10 @@ func main() {
 					if (keyName == "escape") && (e.Type == sdl.KEYDOWN) {
 						running = false
 					} else if (keyName == "f10") && (e.Type == sdl.KEYDOWN) {
-						console.Paused = !console.Paused
-						r.animateCLI = true
-						if r.t0 == 0 {
-							r.t0 = time.Nanoseconds()
-						} else {
-							t := time.Nanoseconds()
-							r.t0 = t - (ANIMATION_TIME - (t - r.t0))
-						}
+						toggleAnimation = !toggleAnimation
+						console.Paused = toggleAnimation
+						sliding.Start()
+						<-sliding.FinishedCh()
 					} else if (keyName == "up") && (e.Type == sdl.KEYDOWN) {
 						console.ReadlineCh() <- clingon.HISTORY_PREV
 					} else if (keyName == "down") && (e.Type == sdl.KEYDOWN) {
@@ -237,10 +204,19 @@ func main() {
 		}
 	}()
 
+	var y int16 = config.consoleY
+
 	for running {
 		select {
+		case value := <-sliding.ValueCh():
+			if toggleAnimation {
+				y = 40 + int16(value)
+			} else {
+				y = 480 - int16(value)
+			}
+			r.render(nil, y)
 		case rects := <-sdlrenderer.UpdatedRectsCh():
-			r.render(rects)
+			r.render(rects, y)
 		}
 	}
 

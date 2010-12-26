@@ -7,7 +7,7 @@ import (
 	"unsafe"
 )
 
-const DEFAULT_SDL_RENDERER_FPS = 30.0
+const DEFAULT_CONSOLE_RENDERER_FPS = 10.0
 
 type metrics struct {
 	// Surface width, height
@@ -40,8 +40,6 @@ func (m *metrics) calcCommandLineRect() *sdl.Rect {
 }
 
 type SDLRenderer struct {
-	// Frame per-second, greater than 0
-	fps float
 	// Activate/deactivate blended text rendering. By default use
 	// solid text rendering
 	Blended bool
@@ -49,6 +47,8 @@ type SDLRenderer struct {
 	Color sdl.Color
 	// Set the font family
 	Font *ttf.Font
+	// Frame per-second, greater than 0
+	fps float
 
 	layout                                               metrics
 	internalSurface, visibleSurface                      *sdl.Surface
@@ -65,7 +65,7 @@ func NewSDLRenderer(surface *sdl.Surface, font *ttf.Font) *SDLRenderer {
 	surface.GetClipRect(rect)
 
 	renderer := &SDLRenderer{
-		fps:                 DEFAULT_SDL_RENDERER_FPS,
+		fps:                 DEFAULT_CONSOLE_RENDERER_FPS,
 		Color:               sdl.Color{255, 255, 255, 0},
 		internalSurface:     sdl.CreateRGBSurface(sdl.SWSURFACE, int(surface.W), int(surface.H), 32, 0, 0, 0, 0),
 		visibleSurface:      surface,
@@ -259,7 +259,7 @@ func (renderer *SDLRenderer) loop() {
 		case fps := <-renderer.fpsCh:
 			ticker.Stop()
 			if fps <= 0 {
-				fps = DEFAULT_SDL_RENDERER_FPS
+				fps = DEFAULT_CONSOLE_RENDERER_FPS
 			}
 			renderer.fps = fps
 			ticker = time.NewTicker(int64(1e9 / fps))

@@ -4,7 +4,7 @@ import (
 	"⚛sdl"
 	"testing"
 	pt "prettytest"
-	"clingon"
+	//	"clingon"
 )
 
 type specsSuite struct {
@@ -16,6 +16,7 @@ func (s *specsSuite) beforeAll() {
 }
 
 func (s *specsSuite) afterAll() {
+	terminateRendering <- true
 	sdl.Quit()
 }
 
@@ -58,6 +59,13 @@ func (s *specsSuite) should_move_cursor() {
 		clingon.CURSOR_RIGHT,
 	},
 		2e8)}))
+}
+
+func (s *specsSuite) should_slidedown_slideup() {
+	slideDown.Start()
+	s.True(<-slideDown.FinishedCh())
+	slideUp.Start()
+	s.True(<-slideUp.FinishedCh())
 }
 
 func TestConsoleSpecs(t *testing.T) {
