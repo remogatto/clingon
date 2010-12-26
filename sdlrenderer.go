@@ -159,25 +159,27 @@ func (renderer *SDLRenderer) clearPrompt() {
 }
 
 func (renderer *SDLRenderer) renderLine(pos int, line string) {
-	var textSurface *sdl.Surface
+	if line != "" {
+		var textSurface *sdl.Surface
 
-	if renderer.Blended {
-		textSurface = ttf.RenderUTF8_Blended(renderer.Font, line, renderer.Color)
-	} else {
-		textSurface = ttf.RenderUTF8_Solid(renderer.Font, line, renderer.Color)
+		if renderer.Blended {
+			textSurface = ttf.RenderUTF8_Blended(renderer.Font, line, renderer.Color)
+		} else {
+			textSurface = ttf.RenderUTF8_Solid(renderer.Font, line, renderer.Color)
+		}
+
+		x := renderer.layout.commandLineRect.X
+		y := int16(renderer.layout.commandLineRect.Y) - int16(renderer.layout.commandLineRect.H*uint16(pos))
+		w := renderer.layout.commandLineRect.W
+		h := renderer.layout.commandLineRect.H
+
+		if textSurface != nil {
+			renderer.internalSurface.Blit(&sdl.Rect{x, y, w, h}, textSurface, nil)
+			textSurface.Free()
+		}
+		
+		renderer.updatedRects = append(renderer.updatedRects, sdl.Rect{x, y, w, h})
 	}
-
-	x := renderer.layout.commandLineRect.X
-	y := int16(renderer.layout.commandLineRect.Y) - int16(renderer.layout.commandLineRect.H*uint16(pos))
-	w := renderer.layout.commandLineRect.W
-	h := renderer.layout.commandLineRect.H
-
-	if textSurface != nil {
-		renderer.internalSurface.Blit(&sdl.Rect{x, y, w, h}, textSurface, nil)
-		textSurface.Free()
-	}
-
-	renderer.updatedRects = append(renderer.updatedRects, sdl.Rect{x, y, w, h})
 }
 
 // Return the address of pixel at (x,y)
