@@ -4,7 +4,7 @@ import (
 	"⚛sdl"
 	"testing"
 	pt "prettytest"
-	//	"clingon"
+	"clingon"
 )
 
 type specsSuite struct {

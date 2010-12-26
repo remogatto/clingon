@@ -15,7 +15,7 @@ var (
 	sdlrenderer              *clingon.SDLRenderer
 	running, toggleAnimation bool
 	r                        *renderer
-	sliding                  *clingon.Animation
+	slideDown, slideUp       *clingon.Animation
 )
 
 type configuration struct {
@@ -24,6 +24,7 @@ type configuration struct {
 	fullscreen, verbose bool
 	fps                 float
 	bgImage             string
+	animationDuration   int64
 }
 
 type renderer struct {
@@ -104,7 +105,9 @@ func initialize(config *configuration) {
 		bgImageSurface: bgImage,
 	}
 
-	sliding = clingon.NewSlidingAnimation(1e9, float64(int16(appSurface.H)-config.consoleY))
+	slidingDistance := int16(appSurface.H) - config.consoleY
+	slideDown = clingon.NewSlideDownAnimation(config.animationDuration, float64(slidingDistance))
+	slideUp = clingon.NewSlideUpAnimation(config.animationDuration, float64(slidingDistance))
 }
 
 func main() {
@@ -136,14 +139,15 @@ func main() {
 	}
 
 	config = configuration{
-		verbose:    *verbose,
-		fps:        *fps,
-		fullscreen: *fullscreen,
-		bgImage:    *bgImage,
-		consoleX:   40,
-		consoleY:   40,
-		consoleW:   560,
-		consoleH:   400,
+		verbose:           *verbose,
+		fps:               *fps,
+		fullscreen:        *fullscreen,
+		bgImage:           *bgImage,
+		consoleX:          40,
+		consoleY:          40,
+		consoleW:          560,
+		consoleH:          400,
+		animationDuration: 1e9,
 	}
 
 	initialize(&config)
@@ -181,8 +185,17 @@ func main() {
 					} else if (keyName == "f10") && (e.Type == sdl.KEYDOWN) {
 						toggleAnimation = !toggleAnimation
 						console.Paused = toggleAnimation
-						sliding.Start()
-						<-sliding.FinishedCh()
+						if console.Paused {
+							t := slideUp.Pause()
+							slideDown.Resume(t)
+						} else {
+							t := slideDown.Pause()
+							if t == 0 {
+								slideUp.Start()
+							} else {
+								slideUp.Resume(1e9 - t)
+							}
+						}
 					} else if (keyName == "up") && (e.Type == sdl.KEYDOWN) {
 						console.ReadlineCh() <- clingon.HISTORY_PREV
 					} else if (keyName == "down") && (e.Type == sdl.KEYDOWN) {
@@ -204,17 +217,21 @@ func main() {
 		}
 	}()
 
-	var y int16 = config.consoleY
-
+	var (
+		y int16 = config.consoleY
+//		animating bool
+	)
+	
 	for running {
 		select {
-		case value := <-sliding.ValueCh():
-			if toggleAnimation {
-				y = 40 + int16(value)
-			} else {
-				y = 480 - int16(value)
-			}
+		case value := <-slideDown.ValueCh():
+			y = 40 + int16(value)
 			r.render(nil, y)
+		case value := <-slideUp.ValueCh():
+			y = 40 + int16(value)
+			r.render(nil, y)
+		case <-slideDown.FinishedCh():
+		case <-slideUp.FinishedCh():
 		case rects := <-sdlrenderer.UpdatedRectsCh():
 			r.render(rects, y)
 		}

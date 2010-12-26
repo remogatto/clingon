@@ -90,9 +90,17 @@ func (animation *Animation) animate() {
 	}
 }
 
-func NewSlidingAnimation(duration int64, distance float64) *Animation {
+func NewSlideDownAnimation(duration int64, distance float64) *Animation {
 	return NewAnimation(func(t int64) float64 {
 		arc := (1 - float64(t)/float64(duration)) * (math.Pi / 2)
+		return float64(distance) * (math.Cos(arc))
+	},
+		duration)
+}
+
+func NewSlideUpAnimation(duration int64, distance float64) *Animation {
+	return NewAnimation(func(t int64) float64 {
+		arc := float64(t) / float64(duration) * (math.Pi / 2)
 		return float64(distance) * (math.Cos(arc))
 	},
 		duration)

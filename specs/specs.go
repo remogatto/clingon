@@ -24,7 +24,7 @@ var (
 	distance                               = float64(uint16(appSurfaceH) - (uint16(appSurfaceH)-consoleH)/2)
 	finished                               bool
 
-	slideUp, slideDown = clingon.NewSlidingAnimation(1e9, distance), clingon.NewSlidingAnimation(1e9, distance)
+	slideUp, slideDown = clingon.NewSlideUpAnimation(1e9, distance), clingon.NewSlideDownAnimation(1e9, distance)
 	terminateRendering = make(chan bool)
 )
 
@@ -146,10 +146,10 @@ func initTest() {
 				return
 			case y = <-slideDown.ValueCh():
 				console.Paused = true
-				render(nil, consoleY+int16(y))
+				render(nil, 40+int16(y))
 			case y = <-slideUp.ValueCh():
 				console.Paused = true
-				render(nil, int16(appSurfaceH)-int16(y))
+				render(nil, 40+int16(y))
 			case rects := <-sdlrenderer.UpdatedRectsCh():
 				render(rects, int16(y))
 			}
