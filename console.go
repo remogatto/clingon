@@ -20,22 +20,41 @@ type Evaluator interface {
 	Run(console *Console, command string) os.Error
 }
 
+type UpdateConsoleEvent struct {
+	console *Console
+}
+
+type InsertCharEvent struct {
+	console *Console
+	char    uint16
+}
+
+type BackspaceEvent struct {
+	console *Console
+}
+
+type NewlineEvent struct {
+	console *Console
+}
+
+type MoveCursorEvent struct {
+	console        *Console
+	cursorPosition int
+}
+
+type UpdateCursorEvent struct {
+	console *Console
+	enabled bool
+}
+
+type UpdateCommandLineEvent struct {
+	console     *Console
+	commandline *CommandLine
+}
+
 type Renderer interface {
-	// Returns a receive-only channel that receives a Console
-	// instance for updating the command-line
-	RenderCommandLineCh() chan<- *Console
-
-	// Returns a receive-only channel that receives a Console
-	// instance for updating the whole console visible area	
-	RenderConsoleCh() chan<- *Console
-
-	// Tell the renderer to render the cursor at current position
-	// by sending a console instance
-	RenderCursorCh() chan<- *Console
-
-	// Tell the renderer to enable/disable the cursor at current
-	// position by sending a bool value
-	EnableCursorCh() chan<- bool
+	// Receive Event objects from the console
+	EventCh() chan<- interface{}
 }
 
 type CommandLine struct {
@@ -268,11 +287,11 @@ func (console *Console) loop() {
 	var toggleCursor bool
 	ticker := time.NewTicker(CURSOR_BLINK_TIME)
 
-	// Render the prompt and greeting text before starting the
+	// Render the prompt and the greeting text before starting the
 	// loop
 	if console.renderer != nil {
 		console.Print(console.GreetingText)
-		console.renderer.RenderConsoleCh() <- console
+		console.renderer.EventCh() <- UpdateConsoleEvent{console}
 	}
 
 	for {
@@ -283,8 +302,8 @@ func (console *Console) loop() {
 				case 0x0008: // BACKSPACE
 					console.CommandLine.BackSpace()
 					if console.renderer != nil {
-						console.renderer.EnableCursorCh() <- true
-						console.renderer.RenderCommandLineCh() <- console
+						console.renderer.EventCh() <- UpdateCursorEvent{console, true}
+						console.renderer.EventCh() <- UpdateCommandLineEvent{console, console.CommandLine}
 					}
 				case 0x000d: // RETURN
 					command := console.Return()
@@ -292,14 +311,14 @@ func (console *Console) loop() {
 						console.evaluator.Run(console, command)
 					}
 					if console.renderer != nil {
-						console.renderer.EnableCursorCh() <- true
-						console.renderer.RenderConsoleCh() <- console
+						console.renderer.EventCh() <- UpdateCursorEvent{console, true}
+						console.renderer.EventCh() <- UpdateConsoleEvent{console}
 					}
 				default:
 					console.CommandLine.Insert(string(char))
 					if console.renderer != nil {
-						console.renderer.EnableCursorCh() <- true
-						console.renderer.RenderCommandLineCh() <- console
+						console.renderer.EventCh() <- UpdateCursorEvent{console, true}
+						console.renderer.EventCh() <- UpdateCommandLineEvent{console, console.CommandLine}
 					}
 				}
 
@@ -307,7 +326,7 @@ func (console *Console) loop() {
 				lines := strings.Split(str, "\n", -1)
 				console.PushLines(lines)
 				if console.renderer != nil {
-					console.renderer.RenderConsoleCh() <- console
+					console.renderer.EventCh() <- UpdateConsoleEvent{console}
 				}
 
 			case readlineCmd := <-console.readlineCh: // Browse history
@@ -319,14 +338,13 @@ func (console *Console) loop() {
 					console.CommandLine.MoveCursor(readlineCmd)
 				}
 				if console.renderer != nil {
-					console.renderer.EnableCursorCh() <- true
-					console.renderer.RenderCommandLineCh() <- console
+					console.renderer.EventCh() <- UpdateCursorEvent{console, true}
+					console.renderer.EventCh() <- UpdateCommandLineEvent{console, console.CommandLine}
 				}
 
 			case <-ticker.C: // Blink cursor
 				if console.renderer != nil {
-					console.renderer.EnableCursorCh() <- toggleCursor
-					console.renderer.RenderCursorCh() <- console
+					console.renderer.EventCh() <- UpdateCursorEvent{console, toggleCursor}
 				}
 				toggleCursor = !toggleCursor
 			}

@@ -7,7 +7,7 @@ import (
 	"unsafe"
 )
 
-const DEFAULT_CONSOLE_RENDERER_FPS = 10.0
+const DEFAULT_CONSOLE_RENDERER_FPS = 30.0
 
 type metrics struct {
 	// Surface width, height
@@ -50,14 +50,13 @@ type SDLRenderer struct {
 	// Frame per-second, greater than 0
 	fps float
 
-	layout                                               metrics
-	internalSurface, visibleSurface                      *sdl.Surface
-	cursorOn                                             bool
-	renderCommandLineCh, renderConsoleCh, renderCursorCh chan *Console
-	enableCursorCh                                       chan bool
-	fpsCh                                                chan float
-	updatedRects                                         []sdl.Rect
-	updatedRectsCh                                       chan []sdl.Rect
+	layout                          metrics
+	internalSurface, visibleSurface *sdl.Surface
+	cursorOn                        bool
+	eventCh                         chan interface{}
+	fpsCh                           chan float
+	updatedRects                    []sdl.Rect
+	updatedRectsCh                  chan []sdl.Rect
 }
 
 func NewSDLRenderer(surface *sdl.Surface, font *ttf.Font) *SDLRenderer {
@@ -65,18 +64,15 @@ func NewSDLRenderer(surface *sdl.Surface, font *ttf.Font) *SDLRenderer {
 	surface.GetClipRect(rect)
 
 	renderer := &SDLRenderer{
-		fps:                 DEFAULT_CONSOLE_RENDERER_FPS,
-		Color:               sdl.Color{255, 255, 255, 0},
-		internalSurface:     sdl.CreateRGBSurface(sdl.SWSURFACE, int(surface.W), int(surface.H), 32, 0, 0, 0, 0),
-		visibleSurface:      surface,
-		Font:                font,
-		renderCommandLineCh: make(chan *Console),
-		renderConsoleCh:     make(chan *Console),
-		renderCursorCh:      make(chan *Console),
-		enableCursorCh:      make(chan bool),
-		fpsCh:               make(chan float),
-		updatedRects:        make([]sdl.Rect, 0),
-		updatedRectsCh:      make(chan []sdl.Rect),
+		fps:             DEFAULT_CONSOLE_RENDERER_FPS,
+		Color:           sdl.Color{255, 255, 255, 0},
+		internalSurface: sdl.CreateRGBSurface(sdl.SWSURFACE, int(surface.W), int(surface.H), 32, 0, 0, 0, 0),
+		visibleSurface:  surface,
+		Font:            font,
+		eventCh:         make(chan interface{}),
+		fpsCh:           make(chan float),
+		updatedRects:    make([]sdl.Rect, 0),
+		updatedRectsCh:  make(chan []sdl.Rect),
 	}
 
 	fontWidth, fontHeight, _ := font.SizeText("A")
@@ -98,20 +94,8 @@ func NewSDLRenderer(surface *sdl.Surface, font *ttf.Font) *SDLRenderer {
 	return renderer
 }
 
-func (renderer *SDLRenderer) RenderCommandLineCh() chan<- *Console {
-	return renderer.renderCommandLineCh
-}
-
-func (renderer *SDLRenderer) RenderConsoleCh() chan<- *Console {
-	return renderer.renderConsoleCh
-}
-
-func (renderer *SDLRenderer) EnableCursorCh() chan<- bool {
-	return renderer.enableCursorCh
-}
-
-func (renderer *SDLRenderer) RenderCursorCh() chan<- *Console {
-	return renderer.renderCursorCh
+func (renderer *SDLRenderer) EventCh() chan<- interface{} {
+	return renderer.eventCh
 }
 
 // Tell the renderer to change its FPS (frames per second)
@@ -125,7 +109,7 @@ func (renderer *SDLRenderer) UpdatedRectsCh() <-chan []sdl.Rect {
 
 func (renderer *SDLRenderer) renderCommandLine(console *Console) {
 	renderer.clearPrompt()
-	renderer.renderLine(0, console.CommandLine.String())
+	go renderer.renderLine(0, console.CommandLine.String())
 	renderer.renderCursor(console)
 }
 
@@ -159,27 +143,26 @@ func (renderer *SDLRenderer) clearPrompt() {
 }
 
 func (renderer *SDLRenderer) renderLine(pos int, line string) {
-	if line != "" {
-		var textSurface *sdl.Surface
 
-		if renderer.Blended {
-			textSurface = ttf.RenderUTF8_Blended(renderer.Font, line, renderer.Color)
-		} else {
-			textSurface = ttf.RenderUTF8_Solid(renderer.Font, line, renderer.Color)
-		}
+	var textSurface *sdl.Surface
 
-		x := renderer.layout.commandLineRect.X
-		y := int16(renderer.layout.commandLineRect.Y) - int16(renderer.layout.commandLineRect.H*uint16(pos))
-		w := renderer.layout.commandLineRect.W
-		h := renderer.layout.commandLineRect.H
-
-		if textSurface != nil {
-			renderer.internalSurface.Blit(&sdl.Rect{x, y, w, h}, textSurface, nil)
-			textSurface.Free()
-		}
-		
-		renderer.updatedRects = append(renderer.updatedRects, sdl.Rect{x, y, w, h})
+	if renderer.Blended {
+		textSurface = ttf.RenderUTF8_Blended(renderer.Font, line, renderer.Color)
+	} else {
+		textSurface = ttf.RenderUTF8_Solid(renderer.Font, line, renderer.Color)
 	}
+
+	x := renderer.layout.commandLineRect.X
+	y := int16(renderer.layout.commandLineRect.Y) - int16(renderer.layout.commandLineRect.H*uint16(pos))
+	w := renderer.layout.commandLineRect.W
+	h := renderer.layout.commandLineRect.H
+
+	if textSurface != nil {
+		renderer.internalSurface.Blit(&sdl.Rect{x, y, w, h}, textSurface, nil)
+		textSurface.Free()
+	}
+
+	renderer.updatedRects = append(renderer.updatedRects, sdl.Rect{x, y, w, h})
 }
 
 // Return the address of pixel at (x,y)
@@ -243,20 +226,18 @@ func (renderer *SDLRenderer) render() {
 
 func (renderer *SDLRenderer) loop() {
 	var ticker *time.Ticker = time.NewTicker(int64(1e9 / renderer.fps))
-
 	for {
 		select {
-		case console := <-renderer.renderCommandLineCh:
-			renderer.renderCommandLine(console)
-
-		case console := <-renderer.renderConsoleCh:
-			renderer.renderConsole(console)
-
-		case enableCursor := <-renderer.enableCursorCh:
-			renderer.enableCursor(enableCursor)
-
-		case console := <-renderer.renderCursorCh:
-			renderer.renderCursor(console)
+		case untyped_event := <-renderer.eventCh:
+			switch event := untyped_event.(type) {
+			case UpdateCommandLineEvent:
+				renderer.renderCommandLine(event.console)
+			case UpdateConsoleEvent:
+				renderer.renderConsole(event.console)
+			case UpdateCursorEvent:
+				renderer.enableCursor(event.enabled)
+				renderer.renderCursor(event.console)
+			}
 
 		case fps := <-renderer.fpsCh:
 			ticker.Stop()

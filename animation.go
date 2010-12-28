@@ -69,9 +69,9 @@ func (animation *Animation) animate() {
 		if !animation.paused {
 			select {
 			case <-ticker.C:
-				if animation.t <= animation.duration {
+				if (animation.t <= animation.duration) || (animation.duration < 0) {
 					next_t := animation.t + time_step
-					if next_t > animation.duration {
+					if next_t > animation.duration && animation.duration > 0 {
 						animation.t = animation.duration
 					}
 					animation.valueCh <- animation.f(animation.t)

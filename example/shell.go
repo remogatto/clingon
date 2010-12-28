@@ -147,7 +147,7 @@ func main() {
 		consoleY:          40,
 		consoleW:          560,
 		consoleH:          400,
-		animationDuration: 500*1e6,
+		animationDuration: 500 * 1e6,
 	}
 
 	initialize(&config)
@@ -219,9 +219,9 @@ func main() {
 
 	var (
 		y int16 = config.consoleY
-//		animating bool
+		//		animating bool
 	)
-	
+
 	for running {
 		select {
 		case value := <-slideDown.ValueCh():

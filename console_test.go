@@ -9,22 +9,17 @@ var console *Console
 
 // Renderer mock
 type testRenderer struct {
-	dummyConsoleCh chan *Console
-	dummyBoolCh    chan bool
+	dummyEventCh chan interface{}
 }
 
-func (renderer *testRenderer) RenderCommandLineCh() chan<- *Console { return renderer.dummyConsoleCh }
-func (renderer *testRenderer) RenderConsoleCh() chan<- *Console     { return renderer.dummyConsoleCh }
-func (renderer *testRenderer) RenderCursorCh() chan<- *Console      { return renderer.dummyConsoleCh }
-func (renderer *testRenderer) EnableCursorCh() chan<- bool          { return renderer.dummyBoolCh }
+func (renderer *testRenderer) EventCh() chan<- interface{} { return renderer.dummyEventCh }
 
 func NewTestRenderer() *testRenderer {
-	r := &testRenderer{make(chan *Console), make(chan bool)}
+	r := &testRenderer{make(chan interface{})}
 	go func() {
 		for {
 			select {
-			case <-r.dummyConsoleCh:
-			case <-r.dummyBoolCh:
+			case <-r.dummyEventCh:
 			}
 		}
 	}()
