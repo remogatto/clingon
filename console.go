@@ -43,13 +43,27 @@ type MoveCursorEvent struct {
 }
 
 type UpdateCursorEvent struct {
-	console *Console
-	enabled bool
+	commandLine *CommandLine
+	enabled     bool
 }
 
 type UpdateCommandLineEvent struct {
-	console     *Console
-	commandline *CommandLine
+	commandLine *CommandLine
+}
+
+type SendChar struct {
+	Char uint16
+	Done chan bool
+}
+
+type SendLines struct {
+	Lines string
+	Done  chan bool
+}
+
+type SendReadlineCommand struct {
+	Command int
+	Done    chan bool
 }
 
 type Renderer interface {
@@ -205,11 +219,9 @@ type Console struct {
 	evaluator Evaluator
 
 	// Channels
-	charCh     chan uint16
-	linesCh    chan string
-	readlineCh chan int
-
-	backspaceCh, returnCh chan bool
+	charCh     chan SendChar
+	linesCh    chan SendLines
+	readlineCh chan SendReadlineCommand
 }
 
 // Initialize a new console object. Renderer and Evaluator objects can
@@ -218,11 +230,9 @@ func NewConsole(renderer Renderer, evaluator Evaluator) *Console {
 	console := &Console{
 		lines:       new(vector.StringVector),
 		CommandLine: NewCommandLine("console> "),
-		charCh:      make(chan uint16),
-		linesCh:     make(chan string),
-		backspaceCh: make(chan bool),
-		returnCh:    make(chan bool),
-		readlineCh:  make(chan int),
+		charCh:      make(chan SendChar),
+		linesCh:     make(chan SendLines),
+		readlineCh:  make(chan SendReadlineCommand),
 		renderer:    renderer,
 		evaluator:   evaluator,
 	}
@@ -262,24 +272,19 @@ func (console *Console) GetCommandLine() string {
 }
 
 // Return the character channel (receive only)
-func (console *Console) CharCh() chan<- uint16 {
+func (console *Console) CharCh() chan<- SendChar {
 	return console.charCh
 }
 
-// Return the return channel (receive only)
-func (console *Console) ReturnCh() chan<- bool {
-	return console.returnCh
-}
-
 // Return the lines channel (receive only).
-func (console *Console) LinesCh() chan<- string {
+func (console *Console) LinesCh() chan<- SendLines {
 	return console.linesCh
 }
 
 // Client code can send readline-like command to this channel
 // (e.g. history browsing, cursor movements, etc.). Readline's
 // commands emulation is incomplete.
-func (console *Console) ReadlineCh() chan<- int {
+func (console *Console) ReadlineCh() chan<- SendReadlineCommand {
 	return console.readlineCh
 }
 
@@ -297,13 +302,12 @@ func (console *Console) loop() {
 	for {
 		if !console.Paused {
 			select {
-			case char := <-console.charCh:
-				switch char {
+			case receivedChar := <-console.charCh:
+				switch receivedChar.Char {
 				case 0x0008: // BACKSPACE
 					console.CommandLine.BackSpace()
 					if console.renderer != nil {
-						console.renderer.EventCh() <- UpdateCursorEvent{console, true}
-						console.renderer.EventCh() <- UpdateCommandLineEvent{console, console.CommandLine}
+						console.renderer.EventCh() <- UpdateCommandLineEvent{console.CommandLine}
 					}
 				case 0x000d: // RETURN
 					command := console.Return()
@@ -311,40 +315,42 @@ func (console *Console) loop() {
 						console.evaluator.Run(console, command)
 					}
 					if console.renderer != nil {
-						console.renderer.EventCh() <- UpdateCursorEvent{console, true}
 						console.renderer.EventCh() <- UpdateConsoleEvent{console}
 					}
 				default:
-					console.CommandLine.Insert(string(char))
+					console.CommandLine.Insert(string(receivedChar.Char))
 					if console.renderer != nil {
-						console.renderer.EventCh() <- UpdateCursorEvent{console, true}
-						console.renderer.EventCh() <- UpdateCommandLineEvent{console, console.CommandLine}
+						console.renderer.EventCh() <- UpdateCommandLineEvent{console.CommandLine}
 					}
 				}
 
-			case str := <-console.linesCh: // Receive lines of text
-				lines := strings.Split(str, "\n", -1)
+				receivedChar.Done <- true
+
+			case receivedLines := <-console.linesCh: // Receive lines of text
+				lines := strings.Split(receivedLines.Lines, "\n", -1)
 				console.PushLines(lines)
 				if console.renderer != nil {
 					console.renderer.EventCh() <- UpdateConsoleEvent{console}
 				}
+				receivedLines.Done <- true
 
-			case readlineCmd := <-console.readlineCh: // Browse history
-				switch readlineCmd {
+			case receivedReadlineCmd := <-console.readlineCh: // Browse history
+				switch receivedReadlineCmd.Command {
 				case HISTORY_NEXT, HISTORY_PREV:
-					console.CommandLine.BrowseHistory(readlineCmd)
+					console.CommandLine.BrowseHistory(receivedReadlineCmd.Command)
 
 				case CURSOR_LEFT, CURSOR_RIGHT:
-					console.CommandLine.MoveCursor(readlineCmd)
+					console.CommandLine.MoveCursor(receivedReadlineCmd.Command)
 				}
 				if console.renderer != nil {
-					console.renderer.EventCh() <- UpdateCursorEvent{console, true}
-					console.renderer.EventCh() <- UpdateCommandLineEvent{console, console.CommandLine}
+					console.renderer.EventCh() <- UpdateCommandLineEvent{console.CommandLine}
 				}
+
+				receivedReadlineCmd.Done <- true
 
 			case <-ticker.C: // Blink cursor
 				if console.renderer != nil {
-					console.renderer.EventCh() <- UpdateCursorEvent{console, toggleCursor}
+					console.renderer.EventCh() <- UpdateCursorEvent{console.CommandLine, toggleCursor}
 				}
 				toggleCursor = !toggleCursor
 			}

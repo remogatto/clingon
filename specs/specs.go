@@ -51,7 +51,9 @@ func NewEnterCommand(console *clingon.Console, command string, time int64) *Ente
 
 func (i *EnterCommand) Interact(done chan bool) {
 	for _, c := range i.command {
-		console.CharCh() <- uint16(c)
+		done := make(chan bool)
+		console.CharCh() <- clingon.SendChar{uint16(c), done}
+		<-done
 		if i.time > 0 {
 			time.Sleep(i.time)
 		}
@@ -70,7 +72,9 @@ func NewBrowseHistory(console *clingon.Console, dirs []int, time int64) *BrowseH
 }
 func (i *BrowseHistory) Interact(done chan bool) {
 	for _, dir := range i.dirs {
-		console.ReadlineCh() <- dir
+		done := make(chan bool)
+		console.ReadlineCh() <- clingon.SendReadlineCommand{dir, done}
+		<-done
 		if i.time > 0 {
 			time.Sleep(i.time)
 		}
@@ -89,7 +93,9 @@ func NewMoveCursor(console *clingon.Console, dirs []int, time int64) *MoveCursor
 }
 func (i *MoveCursor) Interact(done chan bool) {
 	for _, dir := range i.dirs {
-		console.ReadlineCh() <- dir
+		done := make(chan bool)
+		console.ReadlineCh() <- clingon.SendReadlineCommand{dir, done}
+		<-done
 		if i.time > 0 {
 			time.Sleep(i.time)
 		}

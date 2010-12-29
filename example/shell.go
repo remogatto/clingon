@@ -197,17 +197,27 @@ func main() {
 							}
 						}
 					} else if (keyName == "up") && (e.Type == sdl.KEYDOWN) {
-						console.ReadlineCh() <- clingon.HISTORY_PREV
+						done := make(chan bool)
+						console.ReadlineCh() <- clingon.SendReadlineCommand{clingon.HISTORY_PREV, done}
+						<-done
 					} else if (keyName == "down") && (e.Type == sdl.KEYDOWN) {
-						console.ReadlineCh() <- clingon.HISTORY_NEXT
+						done := make(chan bool)
+						console.ReadlineCh() <- clingon.SendReadlineCommand{clingon.HISTORY_NEXT, done}
+						<-done
 					} else if (keyName == "left") && (e.Type == sdl.KEYDOWN) {
-						console.ReadlineCh() <- clingon.CURSOR_LEFT
+						done := make(chan bool)
+						console.ReadlineCh() <- clingon.SendReadlineCommand{clingon.CURSOR_LEFT, done}
+						<-done
 					} else if (keyName == "right") && (e.Type == sdl.KEYDOWN) {
-						console.ReadlineCh() <- clingon.CURSOR_RIGHT
+						done := make(chan bool)
+						console.ReadlineCh() <- clingon.SendReadlineCommand{clingon.CURSOR_RIGHT, done}
+						<-done
 					} else {
 						unicode := e.Keysym.Unicode
 						if unicode > 0 {
-							console.CharCh() <- unicode
+							done := make(chan bool)
+							console.CharCh() <- clingon.SendChar{unicode, done}
+							<-done
 						}
 					}
 

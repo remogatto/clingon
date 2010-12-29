@@ -107,10 +107,10 @@ func (renderer *SDLRenderer) UpdatedRectsCh() <-chan []sdl.Rect {
 	return renderer.updatedRectsCh
 }
 
-func (renderer *SDLRenderer) renderCommandLine(console *Console) {
+func (renderer *SDLRenderer) renderCommandLine(commandLine *CommandLine) {
 	renderer.clearPrompt()
-	go renderer.renderLine(0, console.CommandLine.String())
-	renderer.renderCursor(console)
+	renderer.renderLine(0, commandLine.String())
+	renderer.renderCursor(commandLine)
 }
 
 func (renderer *SDLRenderer) renderConsole(console *Console) {
@@ -212,8 +212,8 @@ func (renderer *SDLRenderer) cursorX(commandLine *CommandLine) int16 {
 	return int16(cursorX)
 }
 
-func (renderer *SDLRenderer) renderCursor(console *Console) {
-	renderer.renderCursorRect(renderer.cursorX(console.CommandLine))
+func (renderer *SDLRenderer) renderCursor(commandLine *CommandLine) {
+	renderer.renderCursorRect(renderer.cursorX(commandLine))
 }
 
 func (renderer *SDLRenderer) render() {
@@ -231,14 +231,14 @@ func (renderer *SDLRenderer) loop() {
 		case untyped_event := <-renderer.eventCh:
 			switch event := untyped_event.(type) {
 			case UpdateCommandLineEvent:
-				renderer.renderCommandLine(event.console)
+				renderer.enableCursor(true)
+				renderer.renderCommandLine(event.commandLine)
 			case UpdateConsoleEvent:
 				renderer.renderConsole(event.console)
 			case UpdateCursorEvent:
 				renderer.enableCursor(event.enabled)
-				renderer.renderCursor(event.console)
+				renderer.renderCursor(event.commandLine)
 			}
-
 		case fps := <-renderer.fpsCh:
 			ticker.Stop()
 			if fps <= 0 {

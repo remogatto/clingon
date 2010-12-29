@@ -41,9 +41,16 @@ func (s *consoleTestSuite) testInit() {
 }
 
 func (s *consoleTestSuite) testCharCh() {
-	console.CharCh() <- uint16([]int("a")[0])
-	console.CharCh() <- uint16([]int("b")[0])
-	console.CharCh() <- uint16([]int("c")[0])
+	done := make(chan bool)
+
+	console.CharCh() <- SendChar{uint16([]int("a")[0]), done}
+	<-done
+
+	console.CharCh() <- SendChar{uint16([]int("b")[0]), done}
+	<-done
+
+	console.CharCh() <- SendChar{uint16([]int("c")[0]), done}
+	<-done
 
 	s.Equal("a", console.CommandLine.content.At(0))
 	s.Equal("b", console.CommandLine.content.At(1))
@@ -52,8 +59,11 @@ func (s *consoleTestSuite) testCharCh() {
 }
 
 func (s *consoleTestSuite) testLinesCh() {
+	done := make(chan bool)
 	lines := "foo\nbar\nbaz"
-	console.LinesCh() <- lines
+
+	console.LinesCh() <- SendLines{lines, done}
+	<-done
 
 	s.Equal("foo", console.lines.At(0))
 	s.Equal("bar", console.lines.At(1))
@@ -131,18 +141,33 @@ func (s *consoleTestSuite) testMoveCursor() {
 }
 
 func (s *consoleTestSuite) testGetCommandLine() {
-	console.CharCh() <- uint16([]int("a")[0])
-	console.CharCh() <- uint16([]int("b")[0])
-	console.CharCh() <- uint16([]int("c")[0])
+	done := make(chan bool)
+
+	console.CharCh() <- SendChar{uint16([]int("a")[0]), done}
+	<-done
+
+	console.CharCh() <- SendChar{uint16([]int("b")[0]), done}
+	<-done
+
+	console.CharCh() <- SendChar{uint16([]int("c")[0]), done}
+	<-done
 
 	s.Equal("console> abc", console.CommandLine.String())
 }
 
 func (s *consoleTestSuite) testSetPrompt() {
 	console.SetPrompt("foo> ")
-	console.CharCh() <- uint16([]int("a")[0])
-	console.CharCh() <- uint16([]int("b")[0])
-	console.CharCh() <- uint16([]int("c")[0])
+
+	done := make(chan bool)
+
+	console.CharCh() <- SendChar{uint16([]int("a")[0]), done}
+	<-done
+
+	console.CharCh() <- SendChar{uint16([]int("b")[0]), done}
+	<-done
+
+	console.CharCh() <- SendChar{uint16([]int("c")[0]), done}
+	<-done
 
 	s.Equal("foo> abc", console.CommandLine.String())
 }
