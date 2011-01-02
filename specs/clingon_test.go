@@ -4,7 +4,9 @@ import (
 	"⚛sdl"
 	"testing"
 	pt "prettytest"
+	"fmt"
 	"clingon"
+	"time"
 )
 
 type specsSuite struct {
@@ -66,6 +68,21 @@ func (s *specsSuite) should_slidedown_slideup() {
 	s.True(<-slideDown.FinishedCh())
 	slideUp.Start()
 	s.True(<-slideUp.FinishedCh())
+}
+
+func (s *specsSuite) should_scroll_up_down() {
+	for i := 0; i < 40; i++ {
+		s.True(Interact([]Interactor{NewEnterCommand(console, fmt.Sprintf("Line %d", i), 0)}))
+	}
+	sdlrenderer.ScrollCh() <- clingon.SCROLL_UP
+	time.Sleep(1e9)
+	sdlrenderer.ScrollCh() <- clingon.SCROLL_UP
+	time.Sleep(1e9)
+	sdlrenderer.ScrollCh() <- clingon.SCROLL_DOWN
+	time.Sleep(1e9)
+	sdlrenderer.ScrollCh() <- clingon.SCROLL_DOWN
+	time.Sleep(1e9)
+	s.True(true)
 }
 
 func TestConsoleSpecs(t *testing.T) {

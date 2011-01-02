@@ -48,6 +48,7 @@ type UpdateCursorEvent struct {
 }
 
 type UpdateCommandLineEvent struct {
+	console *Console
 	commandLine *CommandLine
 }
 
@@ -307,7 +308,7 @@ func (console *Console) loop() {
 				case 0x0008: // BACKSPACE
 					console.CommandLine.BackSpace()
 					if console.renderer != nil {
-						console.renderer.EventCh() <- UpdateCommandLineEvent{console.CommandLine}
+						console.renderer.EventCh() <- UpdateCommandLineEvent{console, console.CommandLine}
 					}
 				case 0x000d: // RETURN
 					command := console.Return()
@@ -320,7 +321,7 @@ func (console *Console) loop() {
 				default:
 					console.CommandLine.Insert(string(receivedChar.Char))
 					if console.renderer != nil {
-						console.renderer.EventCh() <- UpdateCommandLineEvent{console.CommandLine}
+						console.renderer.EventCh() <- UpdateCommandLineEvent{console, console.CommandLine}
 					}
 				}
 
@@ -343,7 +344,7 @@ func (console *Console) loop() {
 					console.CommandLine.MoveCursor(receivedReadlineCmd.Command)
 				}
 				if console.renderer != nil {
-					console.renderer.EventCh() <- UpdateCommandLineEvent{console.CommandLine}
+					console.renderer.EventCh() <- UpdateCommandLineEvent{console, console.CommandLine}
 				}
 
 				receivedReadlineCmd.Done <- true

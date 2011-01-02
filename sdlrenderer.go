@@ -137,6 +137,7 @@ func (renderer *SDLRenderer) resizeInternalSurface(console *Console) {
 	if renderer.internalSurface != nil {
 		renderer.internalSurface.Free()
 	}
+
 	h := uint16((console.lines.Len() + 1) * renderer.layout.fontHeight)
 
 	if h > renderer.internalSurfaceMaxHeight {
@@ -269,15 +270,24 @@ func (renderer *SDLRenderer) renderCursor(commandLine *CommandLine) {
 	renderer.renderCursorRect(renderer.cursorX(commandLine))
 }
 
+func (renderer *SDLRenderer) hasScrolled() bool {
+	if renderer.viewportY != int16(renderer.internalSurface.H-renderer.visibleSurface.H) {
+		return true
+	}
+	return false
+}
+
 func (renderer *SDLRenderer) scroll(direction float64) {
 	if direction > 0 {
-		if renderer.viewportY != int16(renderer.internalSurface.H-renderer.visibleSurface.H) {
-			renderer.viewportY += int16(direction)
-		}
+		renderer.viewportY += int16(direction)
 	} else {
-		if renderer.viewportY > 0 {
-			renderer.viewportY += int16(direction)
-		}
+		renderer.viewportY += int16(direction)
+	}
+	if renderer.viewportY > int16(renderer.internalSurface.H-renderer.visibleSurface.H) {
+		renderer.viewportY = int16(renderer.internalSurface.H-renderer.visibleSurface.H)
+	}
+	if renderer.viewportY < 0 {
+			renderer.viewportY = 0
 	}
 }
 
@@ -325,6 +335,9 @@ func (renderer *SDLRenderer) loop() {
 		case untyped_event := <-renderer.eventCh:
 			switch event := untyped_event.(type) {
 			case UpdateCommandLineEvent:
+				if renderer.hasScrolled() {
+					renderer.renderConsole(event.console)
+				}
 				renderer.enableCursor(true)
 				renderer.renderCommandLine(event.commandLine)
 			case UpdateConsoleEvent:
