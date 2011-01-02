@@ -163,6 +163,17 @@ func main() {
 				switch e := event.(type) {
 				case sdl.QuitEvent:
 					running = false
+				case sdl.MouseMotionEvent:
+					var y int
+					state := sdl.GetRelativeMouseState(nil, &y)
+					if state == 1 {
+						if y < 0 {
+							sdlrenderer.ScrollCh() <- clingon.SCROLL_UP
+						} else if y > 0 {
+							sdlrenderer.ScrollCh() <- clingon.SCROLL_DOWN
+
+						}
+					}
 				case sdl.KeyboardEvent:
 					keyName := sdl.GetKeyName(sdl.Key(e.Keysym.Sym))
 
@@ -196,6 +207,10 @@ func main() {
 								slideUp.Resume(config.animationDuration - t)
 							}
 						}
+					} else if (keyName == "page up") && (e.Type == sdl.KEYDOWN) {
+						sdlrenderer.ScrollCh() <- clingon.SCROLL_UP
+					} else if (keyName == "page down") && (e.Type == sdl.KEYDOWN) {
+						sdlrenderer.ScrollCh() <- clingon.SCROLL_DOWN
 					} else if (keyName == "up") && (e.Type == sdl.KEYDOWN) {
 						done := make(chan bool)
 						console.ReadlineCh() <- clingon.SendReadlineCommand{clingon.HISTORY_PREV, done}

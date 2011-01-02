@@ -68,7 +68,7 @@ func BenchmarkRenderConsoleBlended(b *testing.B) {
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		sdlrenderer.renderConsole(console)
-		sdlrenderer.render()
+		sdlrenderer.render(nil)
 	}
 }
 
@@ -83,6 +83,6 @@ func BenchmarkRenderConsoleSolid(b *testing.B) {
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		sdlrenderer.renderConsole(console)
-		sdlrenderer.render()
+		sdlrenderer.render(nil)
 	}
 }
