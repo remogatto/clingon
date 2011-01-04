@@ -150,9 +150,9 @@ func (renderer *SDLRenderer) resizeInternalSurface(console *Console) {
 	renderer.viewportY = int16(renderer.internalSurface.H - renderer.visibleSurface.H)
 }
 
-func (renderer *SDLRenderer) renderCommandLine(commandLine *CommandLine) {
+func (renderer *SDLRenderer) renderCommandLine(commandLine *commandLine) {
 	renderer.clearPrompt()
-	renderer.renderLine(0, commandLine.String())
+	renderer.renderLine(0, commandLine.toString())
 	renderer.renderCursor(commandLine)
 }
 
@@ -165,7 +165,7 @@ func (renderer *SDLRenderer) renderConsole(console *Console) {
 			continue
 		}
 	}
-	renderer.renderLine(0, console.CommandLine.String())
+	renderer.renderLine(0, console.commandLine.toString())
 }
 
 func (renderer *SDLRenderer) enableCursor(enable bool) {
@@ -249,13 +249,13 @@ func (renderer *SDLRenderer) renderCursorRect(x int16) {
 	renderer.addUpdatedRect(&sdl.Rect{x, renderer.cursorY, renderer.layout.cursorWidth, renderer.layout.cursorHeight})
 }
 
-func (renderer *SDLRenderer) cursorX(commandLine *CommandLine) int16 {
+func (renderer *SDLRenderer) cursorX(commandLine *commandLine) int16 {
 	var (
 		cursorX  int = int(renderer.commandLineRect.X)
-		finalPos = commandLine.cursorPosition + len(commandLine.Prompt)
+		finalPos = commandLine.cursorPosition + len(commandLine.prompt)
 	)
 
-	for pos, c := range commandLine.String() {
+	for pos, c := range commandLine.toString() {
 		_, _, _, _, advance, _ := renderer.Font.GlyphMetrics(uint16(c))
 		if pos < finalPos {
 			cursorX += advance
@@ -266,7 +266,7 @@ func (renderer *SDLRenderer) cursorX(commandLine *CommandLine) int16 {
 	return int16(cursorX)
 }
 
-func (renderer *SDLRenderer) renderCursor(commandLine *CommandLine) {
+func (renderer *SDLRenderer) renderCursor(commandLine *commandLine) {
 	renderer.renderCursorRect(renderer.cursorX(commandLine))
 }
 

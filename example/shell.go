@@ -244,7 +244,6 @@ func main() {
 
 	var (
 		y int16 = config.consoleY
-		//		animating bool
 	)
 
 	for running {
