@@ -91,6 +91,9 @@ func NewSDLRenderer(surface *sdl.Surface, font *ttf.Font) *SDLRenderer {
 	renderer.lastVisibleLine = int(float(renderer.layout.height)/float(renderer.layout.fontHeight)) * 2
 	renderer.internalSurfaceMaxHeight = renderer.layout.height * 2
 
+	renderer.internalSurface = sdl.CreateRGBSurface(sdl.SWSURFACE, int(renderer.layout.width), int(renderer.layout.fontHeight), 32, 0, 0, 0, 0)
+	renderer.calcCommandLineRect()
+
 	renderer.Animations[SCROLL_UP_ANIMATION] = NewSlideUpAnimation(1e9, 1.0)
 	renderer.Animations[SCROLL_DOWN_ANIMATION] = NewSlideUpAnimation(1e9, 1.0)
 
@@ -153,6 +156,7 @@ func (renderer *SDLRenderer) resizeInternalSurface(console *Console) {
 func (renderer *SDLRenderer) renderCommandLine(commandLine *commandLine) {
 	renderer.clearPrompt()
 	renderer.renderLine(0, commandLine.toString())
+	renderer.addUpdatedRect(renderer.commandLineRect)
 	renderer.renderCursor(commandLine)
 }
 
@@ -165,6 +169,7 @@ func (renderer *SDLRenderer) renderConsole(console *Console) {
 			continue
 		}
 	}
+	renderer.addUpdatedRect(&sdl.Rect{0, 0, uint16(renderer.internalSurface.W), uint16(renderer.internalSurface.H)})
 	renderer.renderLine(0, console.commandLine.toString())
 }
 
@@ -198,8 +203,6 @@ func (renderer *SDLRenderer) renderLine(pos int, line string) {
 		renderer.internalSurface.Blit(&sdl.Rect{x, y, w, h}, textSurface, nil)
 		textSurface.Free()
 	}
-
-	renderer.addUpdatedRect(&sdl.Rect{x, y, w, h})
 }
 
 func (renderer *SDLRenderer) addUpdatedRect(rect *sdl.Rect) {

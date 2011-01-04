@@ -51,9 +51,7 @@ func NewEnterCommand(console *clingon.Console, command string, time int64) *Ente
 
 func (i *EnterCommand) Interact(done chan bool) {
 	for _, c := range i.command {
-		done := make(chan bool)
-		console.CharCh() <- clingon.SendChar{uint16(c), done}
-		<-done
+		console.PushUnicode(uint16(c))
 		if i.time > 0 {
 			time.Sleep(i.time)
 		}
@@ -72,9 +70,7 @@ func NewBrowseHistory(console *clingon.Console, dirs []int, time int64) *BrowseH
 }
 func (i *BrowseHistory) Interact(done chan bool) {
 	for _, dir := range i.dirs {
-		done := make(chan bool)
-		console.ReadlineCh() <- clingon.SendReadlineCommand{dir, done}
-		<-done
+		console.PushReadline(dir)
 		if i.time > 0 {
 			time.Sleep(i.time)
 		}
@@ -93,9 +89,7 @@ func NewMoveCursor(console *clingon.Console, dirs []int, time int64) *MoveCursor
 }
 func (i *MoveCursor) Interact(done chan bool) {
 	for _, dir := range i.dirs {
-		done := make(chan bool)
-		console.ReadlineCh() <- clingon.SendReadlineCommand{dir, done}
-		<-done
+		console.PushReadline(dir)
 		if i.time > 0 {
 			time.Sleep(i.time)
 		}
@@ -140,7 +134,7 @@ func initTest() {
 	sdlrenderer.GetSurface().SetAlpha(sdl.SRCALPHA, 0xaa)
 
 	console = clingon.NewConsole(sdlrenderer, &Echoer{})
-	console.GreetingText = "Welcome to the CLIngon shell!\n\n"
+	console.Print("Welcome to the CLIngon shell!\n\n")
 
 	render(nil, consoleY)
 

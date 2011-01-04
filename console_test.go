@@ -40,130 +40,89 @@ func (s *consoleTestSuite) testInit() {
 	s.NotNil(console.lines)
 }
 
-func (s *consoleTestSuite) testCharCh() {
-	done := make(chan bool)
-
-	console.CharCh() <- SendChar{uint16([]int("a")[0]), done}
-	<-done
-
-	console.CharCh() <- SendChar{uint16([]int("b")[0]), done}
-	<-done
-
-	console.CharCh() <- SendChar{uint16([]int("c")[0]), done}
-	<-done
-
+func (s *consoleTestSuite) testPushUnicode() {
+	console.PushUnicode(uint16([]int("a")[0]))
+	console.PushUnicode(uint16([]int("b")[0]))
+	console.PushUnicode(uint16([]int("c")[0]))
 	s.Equal("a", console.commandLine.content.At(0))
 	s.Equal("b", console.commandLine.content.At(1))
 	s.Equal("c", console.commandLine.content.At(2))
 	s.Equal(3, console.commandLine.cursorPosition)
 }
 
-func (s *consoleTestSuite) testLinesCh() {
-	done := make(chan bool)
-	lines := "foo\nbar\nbaz"
-
-	console.LinesCh() <- SendLines{lines, done}
-	<-done
-
+func (s *consoleTestSuite) testPrint() {
+	console.Print("foo\nbar\nbaz")
 	s.Equal("foo", console.lines.At(0))
 	s.Equal("bar", console.lines.At(1))
 	s.Equal("baz", console.lines.At(2))
 	s.Equal("console> ", console.commandLine.toString())
 }
 
-func (s *consoleTestSuite) testHistoryCh() {
-	console.commandLine.Insert("f")
-	console.commandLine.Insert("o")
-	console.commandLine.Insert("o")
+func (s *consoleTestSuite) testPushString() {
+	console.PushString("foo")
+	s.Equal("console> foo", console.commandLine.toString())
+}
+
+func (s *consoleTestSuite) testBrowseHistory() {
+	console.PushString("foo")
+	console.Return()
+	console.PushString("bar")
+	console.Return()
+	console.PushString("biz")
 	console.Return()
 
-	console.commandLine.Insert("b")
-	console.commandLine.Insert("a")
-	console.commandLine.Insert("r")
-	console.Return()
-
-	console.commandLine.Insert("b")
-	console.commandLine.Insert("i")
-	console.commandLine.Insert("z")
-	console.Return()
-
-	console.commandLine.BrowseHistory(HISTORY_PREV)
+	console.BrowseHistory(HISTORY_PREV)
 	s.Equal("console> biz", console.commandLine.toString())
 
-	console.commandLine.BrowseHistory(HISTORY_PREV)
+	console.BrowseHistory(HISTORY_PREV)
 	s.Equal("console> bar", console.commandLine.toString())
 
-	console.commandLine.BrowseHistory(HISTORY_PREV)
+	console.BrowseHistory(HISTORY_PREV)
 	s.Equal("console> foo", console.commandLine.toString())
 
-	console.commandLine.BrowseHistory(HISTORY_PREV)
+	console.BrowseHistory(HISTORY_PREV)
 	s.Equal("console> foo", console.commandLine.toString())
 
-	console.commandLine.BrowseHistory(HISTORY_NEXT)
+	console.BrowseHistory(HISTORY_NEXT)
 	s.Equal("console> bar", console.commandLine.toString())
 
-	console.commandLine.BrowseHistory(HISTORY_NEXT)
+	console.BrowseHistory(HISTORY_NEXT)
 	s.Equal("console> biz", console.commandLine.toString())
 
-	console.commandLine.BrowseHistory(HISTORY_NEXT)
+	console.BrowseHistory(HISTORY_NEXT)
 	s.Equal("console> ", console.commandLine.toString())
 
-	console.commandLine.BrowseHistory(HISTORY_PREV)
+	console.BrowseHistory(HISTORY_PREV)
 	s.Equal("console> biz", console.commandLine.toString())
 
-	console.commandLine.Insert("b")
-	console.commandLine.Insert("a")
-	console.commandLine.Insert("r")
+	console.PushString("bar")
 	console.Return()
 
-	console.commandLine.BrowseHistory(HISTORY_PREV)
+	console.BrowseHistory(HISTORY_PREV)
 	s.Equal("console> bizbar", console.commandLine.toString())
 
-	console.commandLine.BrowseHistory(HISTORY_PREV)
+	console.BrowseHistory(HISTORY_PREV)
 	s.Equal("console> biz", console.commandLine.toString())
 }
 
 func (s *consoleTestSuite) testMoveCursor() {
-	console.commandLine.Insert("b")
-	console.commandLine.Insert("a")
-	console.commandLine.Insert("r")
+	console.PushString("bar")
 
-	console.commandLine.MoveCursor(CURSOR_LEFT)
+	console.MoveCursor(CURSOR_LEFT)
 	s.Equal(2, console.commandLine.cursorPosition)
 
-	console.commandLine.MoveCursor(CURSOR_RIGHT)
+	console.MoveCursor(CURSOR_RIGHT)
 	s.Equal(3, console.commandLine.cursorPosition)
 }
 
-func (s *consoleTestSuite) testGetcommandLine() {
-	done := make(chan bool)
-
-	console.CharCh() <- SendChar{uint16([]int("a")[0]), done}
-	<-done
-
-	console.CharCh() <- SendChar{uint16([]int("b")[0]), done}
-	<-done
-
-	console.CharCh() <- SendChar{uint16([]int("c")[0]), done}
-	<-done
-
-	s.Equal("console> abc", console.commandLine.toString())
+func (s *consoleTestSuite) testCommandline() {
+	console.PushString("bar")
+	s.Equal("console> bar", console.Commandline())
 }
 
 func (s *consoleTestSuite) testSetPrompt() {
 	console.SetPrompt("foo> ")
-
-	done := make(chan bool)
-
-	console.CharCh() <- SendChar{uint16([]int("a")[0]), done}
-	<-done
-
-	console.CharCh() <- SendChar{uint16([]int("b")[0]), done}
-	<-done
-
-	console.CharCh() <- SendChar{uint16([]int("c")[0]), done}
-	<-done
-
+	console.PushString("abc")
 	s.Equal("foo> abc", console.commandLine.toString())
 }
 

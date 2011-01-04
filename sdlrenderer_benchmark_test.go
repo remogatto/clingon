@@ -63,7 +63,7 @@ func BenchmarkRenderConsoleBlended(b *testing.B) {
 	for i := 0; i < 1000; i++ {
 		strings = append(strings, fmt.Sprintf("Line %d %s", i, "The quick brown fox jumps over the lazy dog"))
 	}
-	console.PushLines(strings)
+	console.pushLines(strings)
 	sdlrenderer.Blended = true
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
@@ -79,7 +79,7 @@ func BenchmarkRenderConsoleSolid(b *testing.B) {
 	for i := 0; i < 1000; i++ {
 		strings = append(strings, fmt.Sprintf("Line %d %s", i, "The quick brown fox jumps over the lazy dog"))
 	}
-	console.PushLines(strings)
+	console.pushLines(strings)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		sdlrenderer.renderConsole(console)

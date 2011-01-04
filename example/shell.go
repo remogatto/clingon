@@ -16,6 +16,12 @@ var (
 	running, toggleAnimation bool
 	r                        *renderer
 	slideDown, slideUp       *clingon.Animation
+	greetingText = `
+Welcome to the CLIngon shell!
+=============================
+Press F10 to toggle/untoggle
+
+`
 )
 
 type configuration struct {
@@ -95,8 +101,8 @@ func initialize(config *configuration) {
 	}
 
 	console = clingon.NewConsole(sdlrenderer, &ShellEvaluator{})
+	console.Print(greetingText)
 	console.SetPrompt("shell:$ ")
-	console.GreetingText = "Welcome to the CLIngon shell!\n=============================\nPress F10 to toggle/untoggle\n\n"
 
 	r = &renderer{
 		config:         config,
@@ -212,27 +218,17 @@ func main() {
 					} else if (keyName == "page down") && (e.Type == sdl.KEYDOWN) {
 						sdlrenderer.ScrollCh() <- clingon.SCROLL_DOWN
 					} else if (keyName == "up") && (e.Type == sdl.KEYDOWN) {
-						done := make(chan bool)
-						console.ReadlineCh() <- clingon.SendReadlineCommand{clingon.HISTORY_PREV, done}
-						<-done
+						console.PushReadline(clingon.HISTORY_PREV)
 					} else if (keyName == "down") && (e.Type == sdl.KEYDOWN) {
-						done := make(chan bool)
-						console.ReadlineCh() <- clingon.SendReadlineCommand{clingon.HISTORY_NEXT, done}
-						<-done
+						console.PushReadline(clingon.HISTORY_NEXT)
 					} else if (keyName == "left") && (e.Type == sdl.KEYDOWN) {
-						done := make(chan bool)
-						console.ReadlineCh() <- clingon.SendReadlineCommand{clingon.CURSOR_LEFT, done}
-						<-done
+						console.PushReadline(clingon.CURSOR_LEFT)
 					} else if (keyName == "right") && (e.Type == sdl.KEYDOWN) {
-						done := make(chan bool)
-						console.ReadlineCh() <- clingon.SendReadlineCommand{clingon.CURSOR_RIGHT, done}
-						<-done
+						console.PushReadline(clingon.CURSOR_RIGHT)
 					} else {
 						unicode := e.Keysym.Unicode
 						if unicode > 0 {
-							done := make(chan bool)
-							console.CharCh() <- clingon.SendChar{unicode, done}
-							<-done
+							console.PushUnicode(unicode)
 						}
 					}
 

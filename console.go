@@ -52,21 +52,6 @@ type UpdateCommandLineEvent struct {
 	commandLine *commandLine
 }
 
-type SendChar struct {
-	Char uint16
-	Done chan bool
-}
-
-type SendLines struct {
-	Lines string
-	Done  chan bool
-}
-
-type SendReadlineCommand struct {
-	Command int
-	Done    chan bool
-}
-
 type Renderer interface {
 	// Receive Event objects from the console
 	EventCh() chan<- interface{}
@@ -87,6 +72,14 @@ type commandLine struct {
 	historyCount int
 }
 
+func stringVectorToString(v *vector.StringVector) string {
+	var currLine string
+	for _, str := range *v {
+		currLine += str
+	}
+	return currLine
+}
+
 func newCommandLine(prompt string) *commandLine {
 	return &commandLine{
 		prompt:         prompt,
@@ -95,6 +88,10 @@ func newCommandLine(prompt string) *commandLine {
 		cursorPosition: 0,
 		historyCount:   0,
 	}
+}
+
+func (commandLine *commandLine) setPrompt(prompt string) {
+	commandLine.prompt = prompt
 }
 
 // Check if the command line is empty
@@ -145,17 +142,17 @@ func (commandLine *commandLine) browseHistory(direction int) {
 
 // Push current command line on the history and reset the history counter
 func (commandLine *commandLine) push() string {
-	if commandLine.toString() != "" && commandLine.notInHistory(commandLine.toString()) {
+	if commandLine.contentToString() != "" && commandLine.notInHistory(commandLine.contentToString()) {
 		commandLine.history.Push(commandLine.content)
 	}
-	line := commandLine.toString()
+	line := commandLine.contentToString()
 	commandLine.clear()
 	return line
 }
 
 // Return the current prompt line as a single string (including prompt)
 func (commandLine *commandLine) toString() string {
-	return commandLine.prompt + commandLine.stringVectorToString(commandLine.content)
+	return commandLine.prompt + commandLine.contentToString()
 }
 
 // Move the cursor left/right on the command line
@@ -167,12 +164,8 @@ func (commandLine *commandLine) moveCursor(dir int) {
 	}
 }
 
-func (commandLine *commandLine) stringVectorToString(v *vector.StringVector) string {
-	var currLine string
-	for _, str := range *v {
-		currLine += str
-	}
-	return currLine
+func (commandLine *commandLine) contentToString() string {
+	return stringVectorToString(commandLine.content)
 }
 
 func (commandLine *commandLine) decCursorPosition(dec int) {
@@ -192,7 +185,7 @@ func (commandLine *commandLine) incCursorPosition(inc int) {
 func (commandLine *commandLine) notInHistory(line string) bool {
 	for _, v := range *commandLine.history {
 		strVector := v.(*vector.StringVector)
-		historyEntry := commandLine.stringVectorToString(strVector)
+		historyEntry := stringVectorToString(strVector)
 		if line == historyEntry {
 			return false
 		}
@@ -203,8 +196,6 @@ func (commandLine *commandLine) notInHistory(line string) bool {
 type Console struct {
 	// Pause/unpause the console
 	Paused bool
-	// Greeting message
-	GreetingText string
 
 	// An instance of the command-line
 	commandLine *commandLine
@@ -214,11 +205,6 @@ type Console struct {
 	// Interfaces
 	renderer  Renderer
 	evaluator Evaluator
-
-	// Channels
-	charCh     chan SendChar
-	linesCh    chan SendLines
-	readlineCh chan SendReadlineCommand
 }
 
 // Initialize a new console object. Renderer and Evaluator objects can
@@ -227,124 +213,115 @@ func NewConsole(renderer Renderer, evaluator Evaluator) *Console {
 	console := &Console{
 		lines:       new(vector.StringVector),
 		commandLine: newCommandLine("console> "),
-		charCh:      make(chan SendChar),
-		linesCh:     make(chan SendLines),
-		readlineCh:  make(chan SendReadlineCommand),
 		renderer:    renderer,
 		evaluator:   evaluator,
 	}
+
 	go console.loop()
 	return console
 }
 
 // Set the prompt string
 func (console *Console) SetPrompt(prompt string) {
-	console.commandLine.prompt = prompt
+	console.commandLine.setPrompt(prompt)
 }
 
-// Push the current commandline. Return it has a string.
+// Push the current commandline in the console history. Return it has
+// a string.
 func (console *Console) Return() string {
 	commandLine := console.commandLine.push()
 	console.lines.Push(console.commandLine.prompt + commandLine)
 	return commandLine
 }
 
-// Print a string on the console
+// Print a string on the console. The string is splitted in lines by
+// newline characters.
 func (console *Console) Print(str string) {
 	if str != "" {
-		console.PushLines(strings.Split(str, "\n", -1))
+		console.pushLines(strings.Split(str, "\n", -1))
+		if console.renderer != nil {
+			console.renderer.EventCh() <- UpdateConsoleEvent{console}
+		}
 	}
 }
 
-// Push lines of text
-func (console *Console) PushLines(lines []string) {
+// Get the current command line as a string.
+func (console *Console) Commandline() string {
+	return console.commandLine.toString()
+}
+
+// Push an unicode value on the commandline at the current cursor
+// position.
+func (console *Console) PushUnicode(value uint16) {
+	var event interface{}
+	switch value {
+	case 0x0008: // BACKSPACE
+		console.commandLine.backSpace()
+		event = UpdateCommandLineEvent{console, console.commandLine}
+	case 0x000d: // RETURN
+		command := console.Return()
+		if console.evaluator != nil {
+			console.evaluator.Run(console, command)
+		}
+		event = UpdateConsoleEvent{console}
+	default:
+		console.commandLine.insertChar(string(value))
+		event = UpdateCommandLineEvent{console, console.commandLine}
+	}
+	if console.renderer != nil {
+		console.renderer.EventCh() <- event
+	}
+}
+
+// Push a readline-like command on the commandline (e.g. history
+// browsing, cursor movements, etc.). Readline's commands emulation is
+// incomplete.
+func (console *Console) PushReadline(command int) {
+	switch command {
+	case HISTORY_NEXT, HISTORY_PREV:
+		console.commandLine.browseHistory(command)
+	case CURSOR_LEFT, CURSOR_RIGHT:
+		console.commandLine.moveCursor(command)
+	}
+	if console.renderer != nil {
+		console.renderer.EventCh() <- UpdateCommandLineEvent{console, console.commandLine}
+	}
+}
+
+// Push the given string on the command line at the current cursor
+// position.
+func (console *Console) PushString(str string) {
+	for _, c := range str {
+		console.commandLine.insertChar(string(c))
+	}
+}
+
+// Browse the command history going in the given direction. Possible
+// values for direction are HISTORY_UP, HISTORY_DOWN.
+func (console *Console) BrowseHistory(direction int) {
+	console.commandLine.browseHistory(direction)
+}
+
+// Move the cursor left/right on the command line. Possible values for
+// direction are CURSOR_LEFT, CURSOR_RIGHT.
+func (console *Console) MoveCursor(direction int) {
+	console.commandLine.moveCursor(direction)
+}
+
+// Push lines of text on the console. The argument is a slice of
+// strings.
+func (console *Console) pushLines(lines []string) {
 	for _, line := range lines {
 		console.lines.Push(line)
 	}
 }
 
-// Get the current command line
-func (console *Console) CommandLine() string {
-	return console.commandLine.toString()
-}
-
-// Return the character channel (receive only)
-func (console *Console) CharCh() chan<- SendChar {
-	return console.charCh
-}
-
-// Return the lines channel (receive only).
-func (console *Console) LinesCh() chan<- SendLines {
-	return console.linesCh
-}
-
-// Client code can send readline-like command to this channel
-// (e.g. history browsing, cursor movements, etc.). Readline's
-// commands emulation is incomplete.
-func (console *Console) ReadlineCh() chan<- SendReadlineCommand {
-	return console.readlineCh
-}
-
 func (console *Console) loop() {
 	var toggleCursor bool
 	ticker := time.NewTicker(CURSOR_BLINK_TIME)
-
-	// Render the prompt and the greeting text before starting the
-	// loop
-	if console.renderer != nil {
-		console.Print(console.GreetingText)
-		console.renderer.EventCh() <- UpdateConsoleEvent{console}
-	}
-
 	for {
 		if !console.Paused {
 			select {
-			case receivedChar := <-console.charCh:
-				switch receivedChar.Char {
-				case 0x0008: // BACKSPACE
-					console.commandLine.backSpace()
-					if console.renderer != nil {
-						console.renderer.EventCh() <- UpdateCommandLineEvent{console, console.commandLine}
-					}
-				case 0x000d: // RETURN
-					command := console.Return()
-					if console.evaluator != nil {
-						console.evaluator.Run(console, command)
-					}
-					if console.renderer != nil {
-						console.renderer.EventCh() <- UpdateConsoleEvent{console}
-					}
-				default:
-					console.commandLine.insertChar(string(receivedChar.Char))
-					if console.renderer != nil {
-						console.renderer.EventCh() <- UpdateCommandLineEvent{console, console.commandLine}
-					}
-				}
-
-				receivedChar.Done <- true
-
-			case receivedLines := <-console.linesCh: // Receive lines of text
-				lines := strings.Split(receivedLines.Lines, "\n", -1)
-				console.PushLines(lines)
-				if console.renderer != nil {
-					console.renderer.EventCh() <- UpdateConsoleEvent{console}
-				}
-				receivedLines.Done <- true
-
-			case receivedReadlineCmd := <-console.readlineCh: // Browse history
-				switch receivedReadlineCmd.Command {
-				case HISTORY_NEXT, HISTORY_PREV:
-					console.commandLine.browseHistory(receivedReadlineCmd.Command)
-
-				case CURSOR_LEFT, CURSOR_RIGHT:
-					console.commandLine.moveCursor(receivedReadlineCmd.Command)
-				}
-				if console.renderer != nil {
-					console.renderer.EventCh() <- UpdateCommandLineEvent{console, console.commandLine}
-				}
-
-				receivedReadlineCmd.Done <- true
-
 			case <-ticker.C: // Blink cursor
 				if console.renderer != nil {
 					console.renderer.EventCh() <- UpdateCursorEvent{console.commandLine, toggleCursor}
@@ -353,9 +330,6 @@ func (console *Console) loop() {
 			}
 		} else {
 			select {
-			case <-console.charCh:
-			case <-console.linesCh:
-			case <-console.readlineCh:
 			case <-ticker.C:
 			}
 
