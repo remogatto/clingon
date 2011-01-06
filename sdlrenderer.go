@@ -7,7 +7,10 @@ import (
 	"unsafe"
 )
 
-const DEFAULT_CONSOLE_RENDERER_FPS = 10.0
+const (
+	DEFAULT_CONSOLE_RENDERER_FPS = 10.0
+	MAX_INTERNAL_SIZE_FACTOR     = 3
+)
 
 const (
 	SCROLL_UP = iota
@@ -88,14 +91,14 @@ func NewSDLRenderer(surface *sdl.Surface, font *ttf.Font) *SDLRenderer {
 
 	renderer.layout.calcMetrics()
 
-	renderer.lastVisibleLine = int(float(renderer.layout.height)/float(renderer.layout.fontHeight)) * 2
-	renderer.internalSurfaceMaxHeight = renderer.layout.height * 2
+	renderer.lastVisibleLine = int(float(renderer.layout.height)/float(renderer.layout.fontHeight)) * MAX_INTERNAL_SIZE_FACTOR
+	renderer.internalSurfaceMaxHeight = renderer.layout.height * MAX_INTERNAL_SIZE_FACTOR
 
 	renderer.internalSurface = sdl.CreateRGBSurface(sdl.SWSURFACE, int(renderer.layout.width), int(renderer.layout.fontHeight), 32, 0, 0, 0, 0)
 	renderer.calcCommandLineRect()
 
-	renderer.Animations[SCROLL_UP_ANIMATION] = NewSlideUpAnimation(1e9, 1.0)
-	renderer.Animations[SCROLL_DOWN_ANIMATION] = NewSlideUpAnimation(1e9, 1.0)
+	renderer.Animations[SCROLL_UP_ANIMATION] = NewSlideUpAnimation(1e9, 10.0)
+	renderer.Animations[SCROLL_DOWN_ANIMATION] = NewSlideUpAnimation(1e9, 10.0)
 
 	renderer.updatedRects = append(renderer.updatedRects, sdl.Rect{0, 0, renderer.layout.width, renderer.layout.height})
 
@@ -151,6 +154,7 @@ func (renderer *SDLRenderer) resizeInternalSurface(console *Console) {
 	renderer.calcCommandLineRect()
 	renderer.cursorY = renderer.commandLineRect.Y
 	renderer.viewportY = int16(renderer.internalSurface.H - renderer.visibleSurface.H)
+	renderer.internalSurface.SetClipRect(&sdl.Rect{0, 0, renderer.layout.width, h})
 }
 
 func (renderer *SDLRenderer) renderCommandLine(commandLine *commandLine) {
@@ -287,10 +291,10 @@ func (renderer *SDLRenderer) scroll(direction float64) {
 		renderer.viewportY += int16(direction)
 	}
 	if renderer.viewportY > int16(renderer.internalSurface.H-renderer.visibleSurface.H) {
-		renderer.viewportY = int16(renderer.internalSurface.H-renderer.visibleSurface.H)
+		renderer.viewportY = int16(renderer.internalSurface.H - renderer.visibleSurface.H)
 	}
 	if renderer.viewportY < 0 {
-			renderer.viewportY = 0
+		renderer.viewportY = 0
 	}
 }
 
@@ -344,11 +348,12 @@ func (renderer *SDLRenderer) loop() {
 				renderer.enableCursor(true)
 				renderer.renderCommandLine(event.commandLine)
 			case UpdateConsoleEvent:
-				renderer.resizeInternalSurface(event.console)
 				renderer.renderConsole(event.console)
 			case UpdateCursorEvent:
 				renderer.enableCursor(event.enabled)
 				renderer.renderCursor(event.commandLine)
+			case PauseEvent:
+				renderer.renderConsole(event.console)
 			case NewlineEvent:
 			}
 		case dir := <-renderer.scrollCh:
@@ -359,12 +364,12 @@ func (renderer *SDLRenderer) loop() {
 			}
 			ticker.Stop()
 		case value := <-renderer.Animations[SCROLL_UP_ANIMATION].ValueCh():
-			renderer.scroll(-value * 10)
+			renderer.scroll(-value)
 			renderer.render(nil)
 		case <-renderer.Animations[SCROLL_UP_ANIMATION].FinishedCh():
 			ticker = renderer.newTicker(-1)
 		case value := <-renderer.Animations[SCROLL_DOWN_ANIMATION].ValueCh():
-			renderer.scroll(value * 10)
+			renderer.scroll(value)
 			renderer.render(nil)
 		case <-renderer.Animations[SCROLL_DOWN_ANIMATION].FinishedCh():
 			ticker = renderer.newTicker(-1)

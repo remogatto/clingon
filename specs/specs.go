@@ -145,10 +145,10 @@ func initTest() {
 			case <-terminateRendering:
 				return
 			case y = <-slideDown.ValueCh():
-				console.Paused = true
+				console.Pause(true)
 				render(nil, 40+int16(y))
 			case y = <-slideUp.ValueCh():
-				console.Paused = true
+				console.Pause(true)
 				render(nil, 40+int16(y))
 			case rects := <-sdlrenderer.UpdatedRectsCh():
 				render(rects, int16(y))

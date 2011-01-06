@@ -16,11 +16,16 @@ var (
 	running, toggleAnimation bool
 	r                        *renderer
 	slideDown, slideUp       *clingon.Animation
-	greetingText = `
+	greetingText             = `
 Welcome to the CLIngon shell!
 =============================
-Press F10 to toggle/untoggle
 
+Available keys:
+
+* F10 toggle/untoggle
+* F11 pause/unpause
+* PagUp/PagDown for scrolling
+* ESC exit
 `
 )
 
@@ -201,8 +206,8 @@ func main() {
 						running = false
 					} else if (keyName == "f10") && (e.Type == sdl.KEYDOWN) {
 						toggleAnimation = !toggleAnimation
-						console.Paused = toggleAnimation
-						if console.Paused {
+						console.Pause(toggleAnimation)
+						if console.Paused() {
 							t := slideUp.Pause()
 							slideDown.Resume(t)
 						} else {
@@ -213,6 +218,8 @@ func main() {
 								slideUp.Resume(config.animationDuration - t)
 							}
 						}
+					} else if (keyName == "f11") && (e.Type == sdl.KEYDOWN) {
+						console.Pause(!console.Paused())
 					} else if (keyName == "page up") && (e.Type == sdl.KEYDOWN) {
 						sdlrenderer.ScrollCh() <- clingon.SCROLL_UP
 					} else if (keyName == "page down") && (e.Type == sdl.KEYDOWN) {

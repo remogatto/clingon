@@ -63,55 +63,55 @@ func (s *consoleTestSuite) testPushString() {
 	s.Equal("console> foo", console.commandLine.toString())
 }
 
-func (s *consoleTestSuite) testBrowseHistory() {
+func (s *consoleTestSuite) testPushReadline() {
 	console.PushString("foo")
-	console.Return()
+	console.carriageReturn()
 	console.PushString("bar")
-	console.Return()
+	console.carriageReturn()
 	console.PushString("biz")
-	console.Return()
+	console.carriageReturn()
 
-	console.BrowseHistory(HISTORY_PREV)
+	console.PushReadline(HISTORY_PREV)
 	s.Equal("console> biz", console.commandLine.toString())
 
-	console.BrowseHistory(HISTORY_PREV)
+	console.PushReadline(HISTORY_PREV)
 	s.Equal("console> bar", console.commandLine.toString())
 
-	console.BrowseHistory(HISTORY_PREV)
+	console.PushReadline(HISTORY_PREV)
 	s.Equal("console> foo", console.commandLine.toString())
 
-	console.BrowseHistory(HISTORY_PREV)
+	console.PushReadline(HISTORY_PREV)
 	s.Equal("console> foo", console.commandLine.toString())
 
-	console.BrowseHistory(HISTORY_NEXT)
+	console.PushReadline(HISTORY_NEXT)
 	s.Equal("console> bar", console.commandLine.toString())
 
-	console.BrowseHistory(HISTORY_NEXT)
+	console.PushReadline(HISTORY_NEXT)
 	s.Equal("console> biz", console.commandLine.toString())
 
-	console.BrowseHistory(HISTORY_NEXT)
+	console.PushReadline(HISTORY_NEXT)
 	s.Equal("console> ", console.commandLine.toString())
 
-	console.BrowseHistory(HISTORY_PREV)
+	console.PushReadline(HISTORY_PREV)
 	s.Equal("console> biz", console.commandLine.toString())
 
 	console.PushString("bar")
-	console.Return()
+	console.carriageReturn()
 
-	console.BrowseHistory(HISTORY_PREV)
+	console.PushReadline(HISTORY_PREV)
 	s.Equal("console> bizbar", console.commandLine.toString())
 
-	console.BrowseHistory(HISTORY_PREV)
+	console.PushReadline(HISTORY_PREV)
 	s.Equal("console> biz", console.commandLine.toString())
 }
 
 func (s *consoleTestSuite) testMoveCursor() {
 	console.PushString("bar")
 
-	console.MoveCursor(CURSOR_LEFT)
+	console.PushReadline(CURSOR_LEFT)
 	s.Equal(2, console.commandLine.cursorPosition)
 
-	console.MoveCursor(CURSOR_RIGHT)
+	console.PushReadline(CURSOR_RIGHT)
 	s.Equal(3, console.commandLine.cursorPosition)
 }
 

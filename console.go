@@ -36,7 +36,7 @@ type BackspaceEvent struct {
 type NewlineEvent struct {
 	console *Console
 }
- 
+
 type MoveCursorEvent struct {
 	console        *Console
 	cursorPosition int
@@ -48,8 +48,14 @@ type UpdateCursorEvent struct {
 }
 
 type UpdateCommandLineEvent struct {
-	console *Console
+	console     *Console
 	commandLine *commandLine
+}
+
+// Pause/Unpause related event
+type PauseEvent struct {
+	paused  bool
+	console *Console
 }
 
 type Renderer interface {
@@ -194,17 +200,11 @@ func (commandLine *commandLine) notInHistory(line string) bool {
 }
 
 type Console struct {
-	// Pause/unpause the console
-	Paused bool
-
-	// An instance of the command-line
-	commandLine *commandLine
-
-	lines *vector.StringVector
-
-	// Interfaces
-	renderer  Renderer
-	evaluator Evaluator
+	paused      bool                 // Is the console paused?
+	commandLine *commandLine         // An instance of the commandline
+	lines       *vector.StringVector // Lines of text on top of the commandline 
+	renderer    Renderer
+	evaluator   Evaluator
 }
 
 // Initialize a new console object. Renderer and Evaluator objects can
@@ -216,7 +216,9 @@ func NewConsole(renderer Renderer, evaluator Evaluator) *Console {
 		renderer:    renderer,
 		evaluator:   evaluator,
 	}
-
+	if renderer == nil {
+		panic("Renderer can't be nil")
+	}
 	go console.loop()
 	return console
 }
@@ -226,20 +228,12 @@ func (console *Console) SetPrompt(prompt string) {
 	console.commandLine.setPrompt(prompt)
 }
 
-// Push the current commandline in the console history. Return it has
-// a string.
-func (console *Console) Return() string {
-	commandLine := console.commandLine.push()
-	console.lines.Push(console.commandLine.prompt + commandLine)
-	return commandLine
-}
-
 // Print a string on the console. The string is splitted in lines by
 // newline characters.
 func (console *Console) Print(str string) {
 	if str != "" {
 		console.pushLines(strings.Split(str, "\n", -1))
-		if console.renderer != nil {
+		if !console.paused {
 			console.renderer.EventCh() <- UpdateConsoleEvent{console}
 		}
 	}
@@ -259,7 +253,7 @@ func (console *Console) PushUnicode(value uint16) {
 		console.commandLine.backSpace()
 		event = UpdateCommandLineEvent{console, console.commandLine}
 	case 0x000d: // RETURN
-		command := console.Return()
+		command := console.carriageReturn()
 		if console.evaluator != nil {
 			console.evaluator.Run(console, command)
 		}
@@ -268,7 +262,7 @@ func (console *Console) PushUnicode(value uint16) {
 		console.commandLine.insertChar(string(value))
 		event = UpdateCommandLineEvent{console, console.commandLine}
 	}
-	if console.renderer != nil {
+	if !console.paused {
 		console.renderer.EventCh() <- event
 	}
 }
@@ -283,7 +277,7 @@ func (console *Console) PushReadline(command int) {
 	case CURSOR_LEFT, CURSOR_RIGHT:
 		console.commandLine.moveCursor(command)
 	}
-	if console.renderer != nil {
+	if !console.paused {
 		console.renderer.EventCh() <- UpdateCommandLineEvent{console, console.commandLine}
 	}
 }
@@ -294,18 +288,29 @@ func (console *Console) PushString(str string) {
 	for _, c := range str {
 		console.commandLine.insertChar(string(c))
 	}
+	if !console.paused {
+		console.renderer.EventCh() <- UpdateCommandLineEvent{console, console.commandLine}
+	}
 }
 
-// Browse the command history going in the given direction. Possible
-// values for direction are HISTORY_UP, HISTORY_DOWN.
-func (console *Console) BrowseHistory(direction int) {
-	console.commandLine.browseHistory(direction)
+// Clear the commandline.
+func (console *Console) ClearCommandline() {
+	console.commandLine.clear()
+	if !console.paused {
+		console.renderer.EventCh() <- UpdateCommandLineEvent{console, console.commandLine}
+	}
 }
 
-// Move the cursor left/right on the command line. Possible values for
-// direction are CURSOR_LEFT, CURSOR_RIGHT.
-func (console *Console) MoveCursor(direction int) {
-	console.commandLine.moveCursor(direction)
+// Pause/Unpause the console. When the console is paused no events
+// will be sent to the renderer. However, client-code could change the
+// internal state of the console through the API.
+func (console *Console) Pause(value bool) {
+	console.paused = value
+}
+
+// Check if the console is paused.
+func (console *Console) Paused() bool {
+	return console.paused
 }
 
 // Push lines of text on the console. The argument is a slice of
@@ -316,23 +321,22 @@ func (console *Console) pushLines(lines []string) {
 	}
 }
 
+// Push the current commandline in the console history. Return it has
+// a string.
+func (console *Console) carriageReturn() string {
+	commandLine := console.commandLine.push()
+	console.lines.Push(console.commandLine.prompt + commandLine)
+	return commandLine
+}
+
 func (console *Console) loop() {
 	var toggleCursor bool
 	ticker := time.NewTicker(CURSOR_BLINK_TIME)
 	for {
-		if !console.Paused {
-			select {
-			case <-ticker.C: // Blink cursor
-				if console.renderer != nil {
-					console.renderer.EventCh() <- UpdateCursorEvent{console.commandLine, toggleCursor}
-				}
-				toggleCursor = !toggleCursor
-			}
-		} else {
-			select {
-			case <-ticker.C:
-			}
-
+		<-ticker.C // Blink cursor
+		if !console.paused {
+			console.renderer.EventCh() <- UpdateCursorEvent{console.commandLine, toggleCursor}
+			toggleCursor = !toggleCursor
 		}
 	}
 }
