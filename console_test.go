@@ -40,10 +40,10 @@ func (s *consoleTestSuite) testInit() {
 	s.NotNil(console.lines)
 }
 
-func (s *consoleTestSuite) testPushUnicode() {
-	console.PushUnicode(uint16([]int("a")[0]))
-	console.PushUnicode(uint16([]int("b")[0]))
-	console.PushUnicode(uint16([]int("c")[0]))
+func (s *consoleTestSuite) testPutUnicode() {
+	console.PutUnicode(uint16([]int("a")[0]))
+	console.PutUnicode(uint16([]int("b")[0]))
+	console.PutUnicode(uint16([]int("c")[0]))
 	s.Equal("a", console.commandLine.content.At(0))
 	s.Equal("b", console.commandLine.content.At(1))
 	s.Equal("c", console.commandLine.content.At(2))
@@ -58,71 +58,71 @@ func (s *consoleTestSuite) testPrint() {
 	s.Equal("console> ", console.commandLine.toString())
 }
 
-func (s *consoleTestSuite) testPushString() {
-	console.PushString("foo")
+func (s *consoleTestSuite) testPutString() {
+	console.PutString("foo")
 	s.Equal("console> foo", console.commandLine.toString())
 }
 
-func (s *consoleTestSuite) testPushReadline() {
-	console.PushString("foo")
+func (s *consoleTestSuite) testPutReadline() {
+	console.PutString("foo")
 	console.carriageReturn()
-	console.PushString("bar")
+	console.PutString("bar")
 	console.carriageReturn()
-	console.PushString("biz")
+	console.PutString("biz")
 	console.carriageReturn()
 
-	console.PushReadline(HISTORY_PREV)
+	console.PutReadline(HISTORY_PREV)
 	s.Equal("console> biz", console.commandLine.toString())
 
-	console.PushReadline(HISTORY_PREV)
+	console.PutReadline(HISTORY_PREV)
 	s.Equal("console> bar", console.commandLine.toString())
 
-	console.PushReadline(HISTORY_PREV)
+	console.PutReadline(HISTORY_PREV)
 	s.Equal("console> foo", console.commandLine.toString())
 
-	console.PushReadline(HISTORY_PREV)
+	console.PutReadline(HISTORY_PREV)
 	s.Equal("console> foo", console.commandLine.toString())
 
-	console.PushReadline(HISTORY_NEXT)
+	console.PutReadline(HISTORY_NEXT)
 	s.Equal("console> bar", console.commandLine.toString())
 
-	console.PushReadline(HISTORY_NEXT)
+	console.PutReadline(HISTORY_NEXT)
 	s.Equal("console> biz", console.commandLine.toString())
 
-	console.PushReadline(HISTORY_NEXT)
+	console.PutReadline(HISTORY_NEXT)
 	s.Equal("console> ", console.commandLine.toString())
 
-	console.PushReadline(HISTORY_PREV)
+	console.PutReadline(HISTORY_PREV)
 	s.Equal("console> biz", console.commandLine.toString())
 
-	console.PushString("bar")
+	console.PutString("bar")
 	console.carriageReturn()
 
-	console.PushReadline(HISTORY_PREV)
+	console.PutReadline(HISTORY_PREV)
 	s.Equal("console> bizbar", console.commandLine.toString())
 
-	console.PushReadline(HISTORY_PREV)
+	console.PutReadline(HISTORY_PREV)
 	s.Equal("console> biz", console.commandLine.toString())
 }
 
 func (s *consoleTestSuite) testMoveCursor() {
-	console.PushString("bar")
+	console.PutString("bar")
 
-	console.PushReadline(CURSOR_LEFT)
+	console.PutReadline(CURSOR_LEFT)
 	s.Equal(2, console.commandLine.cursorPosition)
 
-	console.PushReadline(CURSOR_RIGHT)
+	console.PutReadline(CURSOR_RIGHT)
 	s.Equal(3, console.commandLine.cursorPosition)
 }
 
 func (s *consoleTestSuite) testCommandline() {
-	console.PushString("bar")
+	console.PutString("bar")
 	s.Equal("console> bar", console.Commandline())
 }
 
 func (s *consoleTestSuite) testSetPrompt() {
 	console.SetPrompt("foo> ")
-	console.PushString("abc")
+	console.PutString("abc")
 	s.Equal("foo> abc", console.commandLine.toString())
 }
 

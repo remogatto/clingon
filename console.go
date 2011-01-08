@@ -233,9 +233,7 @@ func (console *Console) SetPrompt(prompt string) {
 func (console *Console) Print(str string) {
 	if str != "" {
 		console.pushLines(strings.Split(str, "\n", -1))
-		if !console.paused {
-			console.renderer.EventCh() <- UpdateConsoleEvent{console}
-		}
+		console.renderer.EventCh() <- UpdateConsoleEvent{console}
 	}
 }
 
@@ -246,7 +244,7 @@ func (console *Console) Commandline() string {
 
 // Push an unicode value on the commandline at the current cursor
 // position.
-func (console *Console) PushUnicode(value uint16) {
+func (console *Console) PutUnicode(value uint16) {
 	var event interface{}
 	switch value {
 	case 0x0008: // BACKSPACE
@@ -267,10 +265,10 @@ func (console *Console) PushUnicode(value uint16) {
 	}
 }
 
-// Push a readline-like command on the commandline (e.g. history
+// Put a readline-like command on the commandline (e.g. history
 // browsing, cursor movements, etc.). Readline's commands emulation is
 // incomplete.
-func (console *Console) PushReadline(command int) {
+func (console *Console) PutReadline(command int) {
 	switch command {
 	case HISTORY_NEXT, HISTORY_PREV:
 		console.commandLine.browseHistory(command)
@@ -282,23 +280,19 @@ func (console *Console) PushReadline(command int) {
 	}
 }
 
-// Push the given string on the command line at the current cursor
+// Put the given string on the command line at the current cursor
 // position.
-func (console *Console) PushString(str string) {
+func (console *Console) PutString(str string) {
 	for _, c := range str {
 		console.commandLine.insertChar(string(c))
 	}
-	if !console.paused {
-		console.renderer.EventCh() <- UpdateCommandLineEvent{console, console.commandLine}
-	}
+	console.renderer.EventCh() <- UpdateCommandLineEvent{console, console.commandLine}
 }
 
 // Clear the commandline.
 func (console *Console) ClearCommandline() {
 	console.commandLine.clear()
-	if !console.paused {
-		console.renderer.EventCh() <- UpdateCommandLineEvent{console, console.commandLine}
-	}
+	console.renderer.EventCh() <- UpdateCommandLineEvent{console, console.commandLine}
 }
 
 // Pause/Unpause the console. When the console is paused no events
