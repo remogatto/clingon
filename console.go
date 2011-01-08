@@ -239,7 +239,7 @@ func (console *Console) Print(str string) {
 	}
 }
 
-// Get the current command line as a string.
+// Get the current command line as string.
 func (console *Console) Commandline() string {
 	return console.commandLine.toString()
 }
@@ -306,6 +306,7 @@ func (console *Console) ClearCommandline() {
 // internal state of the console through the API.
 func (console *Console) Pause(value bool) {
 	console.paused = value
+	console.renderer.EventCh() <- PauseEvent{value, console}
 }
 
 // Check if the console is paused.

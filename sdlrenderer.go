@@ -19,19 +19,6 @@ const (
 	SCROLL_DOWN_ANIMATION
 )
 
-type metrics struct {
-	// Surface width, height
-	width, height uint16
-
-	cursorWidth, cursorHeight uint16
-	fontWidth, fontHeight     int
-}
-
-func (m *metrics) calcMetrics() {
-	m.cursorWidth = uint16(m.fontWidth)
-	m.cursorHeight = uint16(m.fontHeight)
-}
-
 type SDLRenderer struct {
 	// Activate/deactivate blended text rendering. By default use
 	// solid text rendering
@@ -46,20 +33,24 @@ type SDLRenderer struct {
 	// Frame per-second, greater than 0
 	fps float
 
-	layout                   metrics
-	internalSurface          *sdl.Surface
-	visibleSurface           *sdl.Surface
-	cursorOn                 bool
-	eventCh                  chan interface{}
-	scrollCh                 chan int
-	fpsCh                    chan float
-	updatedRectsCh           chan []sdl.Rect
-	updatedRects             []sdl.Rect
-	viewportY                int16
-	commandLineRect          *sdl.Rect
-	cursorY                  int16
-	lastVisibleLine          int
-	internalSurfaceMaxHeight uint16
+	internalSurface           *sdl.Surface
+	visibleSurface            *sdl.Surface
+	cursorOn                  bool
+	eventCh                   chan interface{}
+	scrollCh                  chan int
+	fpsCh                     chan float
+	updatedRectsCh            chan []sdl.Rect
+	pauseCh                   chan bool
+	updatedRects              []sdl.Rect
+	viewportY                 int16
+	commandLineRect           *sdl.Rect
+	cursorY                   int16
+	lastVisibleLine           int
+	internalSurfaceMaxHeight  uint16
+	width, height             uint16 // visible surface width, height
+	cursorWidth, cursorHeight uint16 // cursor width, height
+	fontWidth, fontHeight     int    // font width, height
+	paused                    bool
 }
 
 func NewSDLRenderer(surface *sdl.Surface, font *ttf.Font) *SDLRenderer {
@@ -74,33 +65,32 @@ func NewSDLRenderer(surface *sdl.Surface, font *ttf.Font) *SDLRenderer {
 		Font:           font,
 		eventCh:        make(chan interface{}),
 		scrollCh:       make(chan int),
+		pauseCh:        make(chan bool),
 		fpsCh:          make(chan float),
 		updatedRectsCh: make(chan []sdl.Rect),
 		updatedRects:   make([]sdl.Rect, 0),
+		width:          rect.W,
+		height:         rect.H,
 	}
 
 	fontWidth, fontHeight, _ := font.SizeText("A")
 
-	renderer.layout = metrics{
+	renderer.fontWidth = fontWidth
+	renderer.fontHeight = fontHeight
 
-		width:      rect.W,
-		height:     rect.H,
-		fontWidth:  fontWidth,
-		fontHeight: fontHeight,
-	}
+	renderer.cursorWidth = uint16(fontWidth)
+	renderer.cursorHeight = uint16(fontHeight)
 
-	renderer.layout.calcMetrics()
+	renderer.lastVisibleLine = int(float(renderer.height)/float(renderer.fontHeight)) * MAX_INTERNAL_SIZE_FACTOR
+	renderer.internalSurfaceMaxHeight = renderer.height * MAX_INTERNAL_SIZE_FACTOR
 
-	renderer.lastVisibleLine = int(float(renderer.layout.height)/float(renderer.layout.fontHeight)) * MAX_INTERNAL_SIZE_FACTOR
-	renderer.internalSurfaceMaxHeight = renderer.layout.height * MAX_INTERNAL_SIZE_FACTOR
-
-	renderer.internalSurface = sdl.CreateRGBSurface(sdl.SWSURFACE, int(renderer.layout.width), int(renderer.layout.fontHeight), 32, 0, 0, 0, 0)
+	renderer.internalSurface = sdl.CreateRGBSurface(sdl.SWSURFACE, int(renderer.width), int(renderer.fontHeight), 32, 0, 0, 0, 0)
 	renderer.calcCommandLineRect()
 
 	renderer.Animations[SCROLL_UP_ANIMATION] = NewSlideUpAnimation(1e9, 10.0)
 	renderer.Animations[SCROLL_DOWN_ANIMATION] = NewSlideUpAnimation(1e9, 10.0)
 
-	renderer.updatedRects = append(renderer.updatedRects, sdl.Rect{0, 0, renderer.layout.width, renderer.layout.height})
+	renderer.updatedRects = append(renderer.updatedRects, sdl.Rect{0, 0, renderer.width, renderer.height})
 
 	go renderer.loop()
 
@@ -121,6 +111,13 @@ func (renderer *SDLRenderer) FPSCh() chan<- float {
 	return renderer.fpsCh
 }
 
+// Tell the renderer to pause its operations.
+func (renderer *SDLRenderer) PauseCh() chan<- bool {
+	return renderer.pauseCh
+}
+
+// From this channel, the client-code receives the rects representing
+// the updated surface regions.
 func (renderer *SDLRenderer) UpdatedRectsCh() <-chan []sdl.Rect {
 	return renderer.updatedRectsCh
 }
@@ -133,9 +130,9 @@ func (renderer *SDLRenderer) GetSurface() *sdl.Surface {
 func (renderer *SDLRenderer) calcCommandLineRect() {
 	renderer.commandLineRect = &sdl.Rect{
 		0,
-		int16(renderer.internalSurface.H) - int16(renderer.layout.fontHeight),
+		int16(renderer.internalSurface.H) - int16(renderer.fontHeight),
 		uint16(renderer.internalSurface.W),
-		uint16(renderer.layout.fontHeight),
+		uint16(renderer.fontHeight),
 	}
 }
 
@@ -144,17 +141,17 @@ func (renderer *SDLRenderer) resizeInternalSurface(console *Console) {
 		renderer.internalSurface.Free()
 	}
 
-	h := uint16((console.lines.Len() + 1) * renderer.layout.fontHeight)
+	h := uint16((console.lines.Len() + 1) * renderer.fontHeight)
 
 	if h > renderer.internalSurfaceMaxHeight {
 		h = renderer.internalSurfaceMaxHeight
 	}
 
-	renderer.internalSurface = sdl.CreateRGBSurface(sdl.SWSURFACE, int(renderer.layout.width), int(h), 32, 0, 0, 0, 0)
+	renderer.internalSurface = sdl.CreateRGBSurface(sdl.SWSURFACE, int(renderer.width), int(h), 32, 0, 0, 0, 0)
 	renderer.calcCommandLineRect()
 	renderer.cursorY = renderer.commandLineRect.Y
 	renderer.viewportY = int16(renderer.internalSurface.H - renderer.visibleSurface.H)
-	renderer.internalSurface.SetClipRect(&sdl.Rect{0, 0, renderer.layout.width, h})
+	renderer.internalSurface.SetClipRect(&sdl.Rect{0, 0, renderer.width, h})
 }
 
 func (renderer *SDLRenderer) renderCommandLine(commandLine *commandLine) {
@@ -213,14 +210,14 @@ func (renderer *SDLRenderer) addUpdatedRect(rect *sdl.Rect) {
 	visibleX, visibleY := renderer.transformToVisibleXY(rect.X, rect.Y)
 	visibleRect := sdl.Rect{visibleX, visibleY, rect.W, rect.H}
 
-	if visibleRect.Y > int16(renderer.layout.height) {
-		visibleRect.Y = int16(renderer.layout.height)
+	if visibleRect.Y > int16(renderer.height) {
+		visibleRect.Y = int16(renderer.height)
 	}
 	if visibleRect.Y < 0 {
 		visibleRect.Y = 0
 	}
-	if visibleRect.H > uint16(renderer.layout.height) {
-		visibleRect.H = uint16(renderer.layout.height)
+	if visibleRect.H > uint16(renderer.height) {
+		visibleRect.H = uint16(renderer.height)
 	}
 
 	renderer.updatedRects = append(renderer.updatedRects, visibleRect)
@@ -252,8 +249,8 @@ func (renderer *SDLRenderer) renderCursorRect(x int16) {
 	} else {
 		cursorColor = 0xffffffff
 	}
-	renderer.renderXORRect(x, renderer.cursorY, renderer.layout.cursorWidth, renderer.layout.cursorHeight, cursorColor)
-	renderer.addUpdatedRect(&sdl.Rect{x, renderer.cursorY, renderer.layout.cursorWidth, renderer.layout.cursorHeight})
+	renderer.renderXORRect(x, renderer.cursorY, renderer.cursorWidth, renderer.cursorHeight, cursorColor)
+	renderer.addUpdatedRect(&sdl.Rect{x, renderer.cursorY, renderer.cursorWidth, renderer.cursorHeight})
 }
 
 func (renderer *SDLRenderer) cursorX(commandLine *commandLine) int16 {
@@ -318,8 +315,8 @@ func (renderer *SDLRenderer) render(rects []sdl.Rect) {
 		}
 	} else {
 		h := uint16(int16(renderer.internalSurface.H) - renderer.viewportY)
-		renderer.visibleSurface.Blit(nil, renderer.internalSurface, &sdl.Rect{0, renderer.viewportY, renderer.layout.width, h})
-		renderer.updatedRects = append(renderer.updatedRects, sdl.Rect{0, 0, renderer.layout.width, renderer.layout.height})
+		renderer.visibleSurface.Blit(nil, renderer.internalSurface, &sdl.Rect{0, renderer.viewportY, renderer.width, h})
+		renderer.updatedRects = append(renderer.updatedRects, sdl.Rect{0, 0, renderer.width, renderer.height})
 	}
 
 	renderer.updatedRectsCh <- renderer.updatedRects
@@ -337,48 +334,74 @@ func (renderer *SDLRenderer) newTicker(fps float) *time.Ticker {
 func (renderer *SDLRenderer) loop() {
 	var ticker *time.Ticker = time.NewTicker(int64(1e9 / renderer.fps))
 
-	for {
-		select {
-		case untyped_event := <-renderer.eventCh:
-			switch event := untyped_event.(type) {
-			case UpdateCommandLineEvent:
-				if renderer.hasScrolled() {
-					renderer.renderConsole(event.console)
-				}
-				renderer.enableCursor(true)
-				renderer.renderCommandLine(event.commandLine)
-			case UpdateConsoleEvent:
-				renderer.renderConsole(event.console)
-			case UpdateCursorEvent:
-				renderer.enableCursor(event.enabled)
-				renderer.renderCursor(event.commandLine)
-			case PauseEvent:
-				renderer.renderConsole(event.console)
-			case NewlineEvent:
-			}
-		case dir := <-renderer.scrollCh:
-			if dir == SCROLL_DOWN {
-				renderer.Animations[SCROLL_DOWN_ANIMATION].Start()
-			} else {
-				renderer.Animations[SCROLL_UP_ANIMATION].Start()
-			}
-			ticker.Stop()
-		case value := <-renderer.Animations[SCROLL_UP_ANIMATION].ValueCh():
-			renderer.scroll(-value)
-			renderer.render(nil)
-		case <-renderer.Animations[SCROLL_UP_ANIMATION].FinishedCh():
-			ticker = renderer.newTicker(-1)
-		case value := <-renderer.Animations[SCROLL_DOWN_ANIMATION].ValueCh():
-			renderer.scroll(value)
-			renderer.render(nil)
-		case <-renderer.Animations[SCROLL_DOWN_ANIMATION].FinishedCh():
-			ticker = renderer.newTicker(-1)
-		case fps := <-renderer.fpsCh:
-			ticker.Stop()
-			ticker = renderer.newTicker(fps)
-		case <-ticker.C:
-			renderer.render(renderer.updatedRects)
+	// Control goroutine
+	go func() {
+		for {
+			renderer.paused = <-renderer.pauseCh
+		}
+	}()
 
+	for {
+		if !renderer.paused {
+			select {
+			case untyped_event := <-renderer.eventCh:
+				switch event := untyped_event.(type) {
+				case UpdateCommandLineEvent:
+					if renderer.hasScrolled() {
+						renderer.renderConsole(event.console)
+					}
+					renderer.enableCursor(true)
+					renderer.renderCommandLine(event.commandLine)
+				case UpdateConsoleEvent:
+					renderer.renderConsole(event.console)
+				case UpdateCursorEvent:
+					renderer.enableCursor(event.enabled)
+					renderer.renderCursor(event.commandLine)
+				case PauseEvent: // if unpaused re-render the console
+					renderer.paused = event.paused
+				}
+			case dir := <-renderer.scrollCh:
+				if dir == SCROLL_DOWN {
+					renderer.Animations[SCROLL_DOWN_ANIMATION].Start()
+				} else {
+					renderer.Animations[SCROLL_UP_ANIMATION].Start()
+				}
+				ticker.Stop()
+			case value := <-renderer.Animations[SCROLL_UP_ANIMATION].ValueCh():
+				renderer.scroll(-value)
+				renderer.render(nil)
+			case <-renderer.Animations[SCROLL_UP_ANIMATION].FinishedCh():
+				ticker = renderer.newTicker(-1)
+			case value := <-renderer.Animations[SCROLL_DOWN_ANIMATION].ValueCh():
+				renderer.scroll(value)
+				renderer.render(nil)
+			case <-renderer.Animations[SCROLL_DOWN_ANIMATION].FinishedCh():
+				ticker = renderer.newTicker(-1)
+			case fps := <-renderer.fpsCh:
+				ticker.Stop()
+				ticker = renderer.newTicker(fps)
+			case <-ticker.C:
+				renderer.render(renderer.updatedRects)
+
+			}
+		} else {
+			select {
+			case untyped_event := <-renderer.eventCh:
+				switch event := untyped_event.(type) {
+				case PauseEvent:
+					renderer.paused = event.paused
+					if !event.paused { // if unpaused re-render the console
+						renderer.renderConsole(event.console)
+					}
+				}
+			case <-renderer.scrollCh:
+			case <-renderer.Animations[SCROLL_UP_ANIMATION].ValueCh():
+			case <-renderer.Animations[SCROLL_UP_ANIMATION].FinishedCh():
+			case <-renderer.Animations[SCROLL_DOWN_ANIMATION].ValueCh():
+			case <-renderer.Animations[SCROLL_DOWN_ANIMATION].FinishedCh():
+			case <-renderer.fpsCh:
+			case <-ticker.C:
+			}
 		}
 	}
 

@@ -85,6 +85,14 @@ func (s *specsSuite) should_scroll_up_down() {
 	s.True(true)
 }
 
+func (s *specsSuite) should_pause_unpause() {
+	console.Pause(true)
+	time.Sleep(2e9)
+	console.Pause(false)
+	time.Sleep(2e9)
+	s.True(true)
+}
+
 func TestConsoleSpecs(t *testing.T) {
 	pt.RunWithFormatter(
 		t,
