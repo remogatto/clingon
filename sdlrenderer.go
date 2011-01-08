@@ -3,12 +3,10 @@ package clingon
 import (
 	"⚛sdl"
 	"⚛sdl/ttf"
-	"time"
 	"unsafe"
 )
 
 const (
-	DEFAULT_CONSOLE_RENDERER_FPS = 10.0
 	MAX_INTERNAL_SIZE_FACTOR     = 3
 )
 
@@ -28,17 +26,14 @@ type SDLRenderer struct {
 	// Set the font family
 	Font *ttf.Font
 
+	// Map of built-in animations
 	Animations map[int]*Animation
-
-	// Frame per-second, greater than 0
-	fps float
 
 	internalSurface           *sdl.Surface
 	visibleSurface            *sdl.Surface
 	cursorOn                  bool
 	eventCh                   chan interface{}
 	scrollCh                  chan int
-	fpsCh                     chan float
 	updatedRectsCh            chan []sdl.Rect
 	pauseCh                   chan bool
 	updatedRects              []sdl.Rect
@@ -58,7 +53,6 @@ func NewSDLRenderer(surface *sdl.Surface, font *ttf.Font) *SDLRenderer {
 	surface.GetClipRect(rect)
 
 	renderer := &SDLRenderer{
-		fps:            DEFAULT_CONSOLE_RENDERER_FPS,
 		Color:          sdl.Color{255, 255, 255, 0},
 		Animations:     make(map[int]*Animation),
 		visibleSurface: surface,
@@ -66,7 +60,6 @@ func NewSDLRenderer(surface *sdl.Surface, font *ttf.Font) *SDLRenderer {
 		eventCh:        make(chan interface{}),
 		scrollCh:       make(chan int),
 		pauseCh:        make(chan bool),
-		fpsCh:          make(chan float),
 		updatedRectsCh: make(chan []sdl.Rect),
 		updatedRects:   make([]sdl.Rect, 0),
 		width:          rect.W,
@@ -97,18 +90,14 @@ func NewSDLRenderer(surface *sdl.Surface, font *ttf.Font) *SDLRenderer {
 	return renderer
 }
 
+// Receive the events triggered by the console.
 func (renderer *SDLRenderer) EventCh() chan<- interface{} {
 	return renderer.eventCh
 }
 
-// Tell the renderer to change its FPS (frames per second)
+// Tell the renderer to scroll up/down the console.
 func (renderer *SDLRenderer) ScrollCh() chan<- int {
 	return renderer.scrollCh
-}
-
-// Tell the renderer to change its FPS (frames per second)
-func (renderer *SDLRenderer) FPSCh() chan<- float {
-	return renderer.fpsCh
 }
 
 // Tell the renderer to pause its operations.
@@ -116,8 +105,8 @@ func (renderer *SDLRenderer) PauseCh() chan<- bool {
 	return renderer.pauseCh
 }
 
-// From this channel, the client-code receives the rects representing
-// the updated surface regions.
+// From this channel, the client receives the rects representing the
+// updated surface regions.
 func (renderer *SDLRenderer) UpdatedRectsCh() <-chan []sdl.Rect {
 	return renderer.updatedRectsCh
 }
@@ -323,24 +312,13 @@ func (renderer *SDLRenderer) render(rects []sdl.Rect) {
 	renderer.updatedRects = make([]sdl.Rect, 0)
 }
 
-func (renderer *SDLRenderer) newTicker(fps float) *time.Ticker {
-	if fps <= 0 {
-		fps = DEFAULT_CONSOLE_RENDERER_FPS
-	}
-	renderer.fps = fps
-	return time.NewTicker(int64(1e9 / fps))
-}
-
 func (renderer *SDLRenderer) loop() {
-	var ticker *time.Ticker = time.NewTicker(int64(1e9 / renderer.fps))
-
 	// Control goroutine
 	go func() {
 		for {
 			renderer.paused = <-renderer.pauseCh
 		}
 	}()
-
 	for {
 		if !renderer.paused {
 			select {
@@ -357,32 +335,24 @@ func (renderer *SDLRenderer) loop() {
 				case UpdateCursorEvent:
 					renderer.enableCursor(event.enabled)
 					renderer.renderCursor(event.commandLine)
-				case PauseEvent: // if unpaused re-render the console
+				case PauseEvent:
 					renderer.paused = event.paused
 				}
+				renderer.render(renderer.updatedRects)
 			case dir := <-renderer.scrollCh:
 				if dir == SCROLL_DOWN {
 					renderer.Animations[SCROLL_DOWN_ANIMATION].Start()
 				} else {
 					renderer.Animations[SCROLL_UP_ANIMATION].Start()
 				}
-				ticker.Stop()
 			case value := <-renderer.Animations[SCROLL_UP_ANIMATION].ValueCh():
 				renderer.scroll(-value)
 				renderer.render(nil)
 			case <-renderer.Animations[SCROLL_UP_ANIMATION].FinishedCh():
-				ticker = renderer.newTicker(-1)
 			case value := <-renderer.Animations[SCROLL_DOWN_ANIMATION].ValueCh():
 				renderer.scroll(value)
 				renderer.render(nil)
 			case <-renderer.Animations[SCROLL_DOWN_ANIMATION].FinishedCh():
-				ticker = renderer.newTicker(-1)
-			case fps := <-renderer.fpsCh:
-				ticker.Stop()
-				ticker = renderer.newTicker(fps)
-			case <-ticker.C:
-				renderer.render(renderer.updatedRects)
-
 			}
 		} else {
 			select {
@@ -399,8 +369,6 @@ func (renderer *SDLRenderer) loop() {
 			case <-renderer.Animations[SCROLL_UP_ANIMATION].FinishedCh():
 			case <-renderer.Animations[SCROLL_DOWN_ANIMATION].ValueCh():
 			case <-renderer.Animations[SCROLL_DOWN_ANIMATION].FinishedCh():
-			case <-renderer.fpsCh:
-			case <-ticker.C:
 			}
 		}
 	}

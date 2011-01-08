@@ -156,6 +156,9 @@ func initTest() {
 
 		}
 	}()
+
+	console.Pause(false)
+
 }
 
 func render(updatedRects []sdl.Rect, y int16) {

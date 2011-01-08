@@ -207,8 +207,9 @@ type Console struct {
 	evaluator   Evaluator
 }
 
-// Initialize a new console object. Renderer and Evaluator objects can
-// be nil.
+// Initialize a new console object. Initially the console is
+// paused. You have to unpause it in order to start rendering. The
+// evaluator argument can be nil.
 func NewConsole(renderer Renderer, evaluator Evaluator) *Console {
 	console := &Console{
 		lines:       new(vector.StringVector),
@@ -216,6 +217,7 @@ func NewConsole(renderer Renderer, evaluator Evaluator) *Console {
 		renderer:    renderer,
 		evaluator:   evaluator,
 	}
+	console.Pause(true)
 	if renderer == nil {
 		panic("Renderer can't be nil")
 	}
@@ -233,6 +235,8 @@ func (console *Console) SetPrompt(prompt string) {
 func (console *Console) Print(str string) {
 	if str != "" {
 		console.pushLines(strings.Split(str, "\n", -1))
+	}
+	if !console.paused {
 		console.renderer.EventCh() <- UpdateConsoleEvent{console}
 	}
 }
@@ -286,13 +290,17 @@ func (console *Console) PutString(str string) {
 	for _, c := range str {
 		console.commandLine.insertChar(string(c))
 	}
-	console.renderer.EventCh() <- UpdateCommandLineEvent{console, console.commandLine}
+	if !console.paused {
+		console.renderer.EventCh() <- UpdateCommandLineEvent{console, console.commandLine}
+	}
 }
 
 // Clear the commandline.
 func (console *Console) ClearCommandline() {
 	console.commandLine.clear()
-	console.renderer.EventCh() <- UpdateCommandLineEvent{console, console.commandLine}
+	if !console.paused {
+		console.renderer.EventCh() <- UpdateCommandLineEvent{console, console.commandLine}
+	}
 }
 
 // Pause/Unpause the console. When the console is paused no events

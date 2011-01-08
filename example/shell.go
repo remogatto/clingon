@@ -225,17 +225,17 @@ func main() {
 					} else if (keyName == "page down") && (e.Type == sdl.KEYDOWN) {
 						sdlrenderer.ScrollCh() <- clingon.SCROLL_DOWN
 					} else if (keyName == "up") && (e.Type == sdl.KEYDOWN) {
-						console.PushReadline(clingon.HISTORY_PREV)
+						console.PutReadline(clingon.HISTORY_PREV)
 					} else if (keyName == "down") && (e.Type == sdl.KEYDOWN) {
-						console.PushReadline(clingon.HISTORY_NEXT)
+						console.PutReadline(clingon.HISTORY_NEXT)
 					} else if (keyName == "left") && (e.Type == sdl.KEYDOWN) {
-						console.PushReadline(clingon.CURSOR_LEFT)
+						console.PutReadline(clingon.CURSOR_LEFT)
 					} else if (keyName == "right") && (e.Type == sdl.KEYDOWN) {
-						console.PushReadline(clingon.CURSOR_RIGHT)
+						console.PutReadline(clingon.CURSOR_RIGHT)
 					} else {
 						unicode := e.Keysym.Unicode
 						if unicode > 0 {
-							console.PushUnicode(unicode)
+							console.PutUnicode(unicode)
 						}
 					}
 

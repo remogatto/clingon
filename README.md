@@ -1,58 +1,57 @@
 # What's that?
 
-Clingon is a Go library that helps in creating a command-line
-interface (CLI) à la Quake. Can't wait to see how does it look? Watch
-this [video](http://www.youtube.com/watch?v=nee3BOtvUCE) and see if it
-is worth reading below.
+Clingon (Command Line INterface for GO Nuts) is a Go library that
+helps in creating command-line interfaces à la Quake. Can't wait to
+see how does it look? Watch this
+[video](http://www.youtube.com/watch?v=nee3BOtvUCE)(early version) and
+see if it is worth reading below.
 
-Clingon exploits a fully concurrent and (hopefully) clean
-design. Basically, there are two goroutine running in parallel:
+Clingon exploits a parallel and (hopefully) clean design. Basically,
+there are four parts running in parallel:
 
-* The console goroutine exposes command-line functionalities to client
-  code. Client code sends characters and commands to this goroutine in
-  order to modify the console state.
+* The console: it runs (almost) in the same goroutine of the
+  client-code and it exposes console functionalities to it. The client
+  modifies the console state through a simple API. When a new console
+  instance is created, a goroutine is spawned. This goroutine simply
+  triggers the "blink cursor" event to the renderer at regular time's
+  interval.
 
-* The renderer goroutine receives console instances (forwarded by the
-  console goroutine) in order to render a graphical representation of
-  the console state.
+* The renderer: it responds to the events triggered by the console in
+  order to render a graphical representation of the console state. A
+  renderer object should implement the Renderer interface.
 
-<pre>
- +---------------+	      +---------------+
- |    console    |	      |   renderer    |
- |   goroutine   |------->|   goroutine   |
- +---------------+	      +---------------+
-        ^
-        |				 
- +---------------+
- |  client code  |
- +---------------+
-</pre>
+* The animation service: it provides a stream of changing values used
+  for animations. For example, this service provides the changing Y
+  coordinate as a function of time in order to achieve the console
+  sliding effect,
 
-The fact that clingon runs in parallel makes it an interesting choice
-for adding console functionalities to games and graphical
-applications. For example, it is used in
-[gospeccy](https://github.com/remogatto/gospeccy) allowing for
-displaying and using a CLI without blocking the emulation process.
+* The evaluator: it evaluates the commands sent to the console
+  providing back a result. It implements the Evaluator interface.
+
+Because of its design, clingon could be a neat choice for adding
+console functionalities to games and graphical applications. For
+example, it is used in
+[gospeccy](https://github.com/remogatto/gospeccy) to provide a
+non-blocking CLI which runs in parallel with the emulator.
 
 Moreover, the fact that console operations are isolated from the
-rendering backend allows for non-blocking graphical effects. For
-example, there could be a nice non-blocking scrolling effect happening
-on newline events.
+rendering backend allows for non-blocking graphical effects.
 
-Clingon tries to emulate a part of readline-like functionalities for
-line editing. At the moment, only a very small subset of the whole
-readline commands are available. However, clingon will never offer a
-complete readline emulation as it's simply not needed in games. See
-the Features section for more details.
+Clingon tries to emulate a part of readline functionalities for line
+editing. At the moment, only a very small subset of the whole readline
+commands are available. However, clingon will never offer a complete
+readline emulation as it's simply not needed in games. See the
+Features section for more details.
 
-Clingon is renderer-agnostic. Currently, only an SDL renderer is
-available in the package but it should not be difficult to add
-different backends (e.g. opengl, draw/x11, etc.)
+Clingon is completely renderer-agnostic. Currently, only an SDL
+renderer is being shipped with the package but it should not be
+difficult to add more backends (e.g. opengl, draw/x11, etc.)
 
 # Features
 
-* Concurrent design
+* Parallel design
 * Graphical backend agnostic (currently an SDL renderer is included)
+* Console scrolling
 * Readline-like commands
 ** left/right cursor movements
 ** up/down history browsing
@@ -92,17 +91,18 @@ After installing the package try the sample code in <tt>example/</tt>
 folder:
 
     cd clingon
-    examples/shell -auto-fps -bg-image testdata/gopher.jpg testdata/VeraMono.ttf
+    example/shell -bg-image testdata/gopher.jpg testdata/VeraMono.ttf
 
 # TODO
 
-* Improve readline emulation adding more commands 
+* Improve readline emulation by adding more commands
 * Add new rendering backends
-* Add graphical effects
+* Add more graphical effects
+* Experimenting with clingon + exp/eval + draw2d
 
 # Video
 
-* [Clingon demo](http://www.youtube.com/watch?v=nee3BOtvUCE)
+* [Clingon demo (early version)](http://www.youtube.com/watch?v=nee3BOtvUCE)
 
 # Credits
 
