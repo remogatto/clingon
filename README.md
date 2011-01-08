@@ -3,7 +3,7 @@
 Clingon (Command Line INterface for GO Nuts) is a Go library that
 helps in creating command-line interfaces à la Quake. Can't wait to
 see how does it look? Watch this
-[video](http://www.youtube.com/watch?v=nee3BOtvUCE)(early version) and
+[video](http://www.youtube.com/watch?v=nee3BOtvUCE) (early version) and
 see if it is worth reading below.
 
 Clingon exploits a parallel and (hopefully) clean design. Basically,
@@ -31,8 +31,9 @@ there are four parts running in parallel:
 Because of its design, clingon could be a neat choice for adding
 console functionalities to games and graphical applications. For
 example, it is used in
-[gospeccy](https://github.com/remogatto/gospeccy) to provide a
-non-blocking CLI which runs in parallel with the emulator.
+[gospeccy](https://github.com/remogatto/gospeccy/tree/clingon)
+(clingon branch) to provide a non-blocking CLI which runs in parallel
+with the emulator.
 
 Moreover, the fact that console operations are isolated from the
 rendering backend allows for non-blocking graphical effects.
