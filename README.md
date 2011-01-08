@@ -54,8 +54,8 @@ difficult to add more backends (e.g. opengl, draw/x11, etc.)
 * Graphical backend agnostic (currently an SDL renderer is included)
 * Console scrolling
 * Readline-like commands
-** left/right cursor movements
-** up/down history browsing
+  * left/right cursor movements
+  * up/down history browsing
 
 # Installation
 
