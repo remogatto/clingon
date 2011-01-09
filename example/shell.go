@@ -33,7 +33,6 @@ type configuration struct {
 	consoleX, consoleY  int16
 	consoleW, consoleH  uint16
 	fullscreen, verbose bool
-	fps                 float
 	bgImage             string
 	animationDuration   int64
 }
@@ -100,15 +99,10 @@ func initialize(config *configuration) {
 
 	sdlrenderer = clingon.NewSDLRenderer(sdl.CreateRGBSurface(sdl.SRCALPHA, int(config.consoleW), int(config.consoleH), 32, 0, 0, 0, 0), font)
 	sdlrenderer.GetSurface().SetAlpha(sdl.SRCALPHA, 0xaa)
-
-	if config.fps > 0 {
-		sdlrenderer.FPSCh() <- config.fps
-	}
-
 	console = clingon.NewConsole(sdlrenderer, &ShellEvaluator{})
 	console.Print(greetingText)
 	console.SetPrompt("shell:$ ")
-
+        ccnsole.Pause(false)
 	r = &renderer{
 		config:         config,
 		appSurface:     appSurface,
@@ -126,7 +120,6 @@ func main() {
 	help := flag.Bool("help", false, "Show usage")
 	verbose := flag.Bool("verbose", false, "Verbose output")
 	fullscreen := flag.Bool("fullscreen", false, "Go fullscreen!")
-	fps := flag.Float("fps", clingon.DEFAULT_CONSOLE_RENDERER_FPS, "Frames per second")
 	bgImage := flag.String("bg-image", "", "Background image file")
 
 	flag.Usage = func() {
@@ -151,7 +144,6 @@ func main() {
 
 	config = configuration{
 		verbose:           *verbose,
-		fps:               *fps,
 		fullscreen:        *fullscreen,
 		bgImage:           *bgImage,
 		consoleX:          40,
