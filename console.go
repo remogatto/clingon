@@ -217,7 +217,6 @@ func NewConsole(renderer Renderer, evaluator Evaluator) *Console {
 		renderer:    renderer,
 		evaluator:   evaluator,
 	}
-	console.Pause(true)
 	if renderer == nil {
 		panic("Renderer can't be nil")
 	}

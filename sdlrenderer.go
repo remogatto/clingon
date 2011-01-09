@@ -276,11 +276,11 @@ func (renderer *SDLRenderer) scroll(direction float64) {
 	} else {
 		renderer.viewportY += int16(direction)
 	}
-	if renderer.viewportY > int16(renderer.internalSurface.H-renderer.visibleSurface.H) {
-		renderer.viewportY = int16(renderer.internalSurface.H - renderer.visibleSurface.H)
-	}
 	if renderer.viewportY < 0 {
 		renderer.viewportY = 0
+	}
+	if renderer.viewportY > int16(renderer.internalSurface.H-renderer.visibleSurface.H) {
+		renderer.viewportY = int16(renderer.internalSurface.H - renderer.visibleSurface.H)
 	}
 }
 

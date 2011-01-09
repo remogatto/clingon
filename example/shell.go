@@ -102,7 +102,7 @@ func initialize(config *configuration) {
 	console = clingon.NewConsole(sdlrenderer, &ShellEvaluator{})
 	console.Print(greetingText)
 	console.SetPrompt("shell:$ ")
-        ccnsole.Pause(false)
+
 	r = &renderer{
 		config:         config,
 		appSurface:     appSurface,
@@ -179,7 +179,6 @@ func main() {
 					}
 				case sdl.KeyboardEvent:
 					keyName := sdl.GetKeyName(sdl.Key(e.Keysym.Sym))
-
 					if config.verbose {
 						fmt.Printf("\n")
 						fmt.Printf("%v: %v", e.Keysym.Sym, ": ", keyName)
