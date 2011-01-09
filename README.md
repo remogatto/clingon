@@ -23,7 +23,7 @@ there are four parts running in parallel:
 * The animation service: it provides a stream of changing values used
   for animations. For example, this service provides the changing Y
   coordinate as a function of time in order to achieve the console
-  sliding effect,
+  sliding effect.
 
 * The evaluator: it evaluates the commands sent to the console
   providing back a result. It implements the Evaluator interface.
