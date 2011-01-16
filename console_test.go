@@ -34,10 +34,16 @@ func (s *consoleTestSuite) before() {
 	console = NewConsole(NewTestRenderer(), nil)
 }
 
-func (s *consoleTestSuite) testInit() {
+func (s *consoleTestSuite) testNewConsole() {
 	console := NewConsole(NewTestRenderer(), nil)
 	s.NotNil(console)
 	s.NotNil(console.lines)
+}
+
+func (s *consoleTestSuite) testString() {
+	console.PutCommand("foo")
+	console.PutCommand("bar")
+	s.Equal("console> foo\nconsole> bar\nconsole> ", console.String())
 }
 
 func (s *consoleTestSuite) testPutUnicode() {
@@ -56,6 +62,19 @@ func (s *consoleTestSuite) testPrint() {
 	s.Equal("bar", console.lines.At(1))
 	s.Equal("baz", console.lines.At(2))
 	s.Equal("console> ", console.commandLine.toString())
+}
+
+func (s *consoleTestSuite) testPrintLines() {
+	console.PrintLines([]string{"foo", "bar", "baz"})
+	s.Equal("foo", console.lines.At(0))
+	s.Equal("bar", console.lines.At(1))
+	s.Equal("baz", console.lines.At(2))
+	s.Equal("console> ", console.commandLine.toString())
+}
+
+func (s *consoleTestSuite) testPutCommand() {
+	console.PutCommand("foo")
+	s.Equal("console> foo", console.lines.At(0))
 }
 
 func (s *consoleTestSuite) testPutString() {

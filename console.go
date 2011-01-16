@@ -8,6 +8,9 @@ import (
 )
 
 const (
+	CARRIAGE_RETURN = 0X000d
+	BACKSPACE = 0x0008
+
 	CURSOR_BLINK_TIME = 5e8
 
 	HISTORY_NEXT = iota
@@ -202,7 +205,7 @@ func (commandLine *commandLine) notInHistory(line string) bool {
 type Console struct {
 	paused      bool                 // Is the console paused?
 	commandLine *commandLine         // An instance of the commandline
-	lines       *vector.StringVector // Lines of text on top of the commandline 
+	lines       *vector.StringVector // Lines of text above the commandline 
 	renderer    Renderer
 	evaluator   Evaluator
 }
@@ -224,9 +227,29 @@ func NewConsole(renderer Renderer, evaluator Evaluator) *Console {
 	return console
 }
 
+// Dump the console content as a string.
+func (console *Console) String() string {
+	var result string
+	for _, str := range *console.lines {
+		result += str + "\n"
+	}
+	result += console.commandLine.toString()
+	return result
+}
+
 // Set the prompt string
 func (console *Console) SetPrompt(prompt string) {
 	console.commandLine.setPrompt(prompt)
+}
+
+// Print a slice of strings on the console.
+func (console *Console) PrintLines(strings []string) {
+	if len(strings) > 0 {
+		console.pushLines(strings)
+	}
+	if !console.paused {
+		console.renderer.EventCh() <- UpdateConsoleEvent{console}
+	}
 }
 
 // Print a string on the console. The string is splitted in lines by
@@ -245,18 +268,26 @@ func (console *Console) Commandline() string {
 	return console.commandLine.toString()
 }
 
-// Push an unicode value on the commandline at the current cursor
+// Put a command and execute it
+func (console *Console) PutCommand(command string) {
+	console.PutString(command)
+	console.PutUnicode(CARRIAGE_RETURN)
+}
+
+// Put an unicode value on the commandline at the current cursor
 // position.
 func (console *Console) PutUnicode(value uint16) {
 	var event interface{}
 	switch value {
-	case 0x0008: // BACKSPACE
+	case BACKSPACE: // BACKSPACE
 		console.commandLine.backSpace()
 		event = UpdateCommandLineEvent{console, console.commandLine}
-	case 0x000d: // RETURN
+	case CARRIAGE_RETURN: // RETURN
 		command := console.carriageReturn()
 		if console.evaluator != nil {
-			console.evaluator.Run(console, command)
+			if err := console.evaluator.Run(console, command); err != nil {
+				console.Print(err.String())
+			}
 		}
 		event = UpdateConsoleEvent{console}
 	default:

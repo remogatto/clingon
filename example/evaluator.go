@@ -14,7 +14,6 @@ type ShellEvaluator struct{}
 func (eval *ShellEvaluator) Run(console *clingon.Console, command string) os.Error {
 	out, err := system(command, exec.DevNull, exec.Pipe, exec.MergeWithStdout)
 	if err != nil {
-		console.Print(err.String())
 		return err
 	}
 	console.Print(out)
