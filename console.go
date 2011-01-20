@@ -5,11 +5,12 @@ import (
 	"time"
 	"strings"
 	"container/vector"
+	"sync"
 )
 
 const (
 	CARRIAGE_RETURN = 0X000d
-	BACKSPACE = 0x0008
+	BACKSPACE       = 0x0008
 
 	CURSOR_BLINK_TIME = 5e8
 
@@ -58,7 +59,15 @@ type UpdateCommandLineEvent struct {
 // Pause/Unpause related event
 type PauseEvent struct {
 	paused  bool
+	done    chan bool
 	console *Console
+}
+
+// Terminate renderer event
+type TerminateEvent struct {
+	terminate bool
+	done      chan bool
+	console   *Console
 }
 
 type Renderer interface {
@@ -208,11 +217,11 @@ type Console struct {
 	lines       *vector.StringVector // Lines of text above the commandline 
 	renderer    Renderer
 	evaluator   Evaluator
+	mu          sync.RWMutex
 }
 
-// Initialize a new console object. Initially the console is
-// paused. You have to unpause it in order to start rendering. The
-// evaluator argument can be nil.
+// Initialize a new console object passing to it a renderer and an
+// evaluator. The evaluator argument can be nil.
 func NewConsole(renderer Renderer, evaluator Evaluator) *Console {
 	console := &Console{
 		lines:       new(vector.StringVector),
@@ -225,6 +234,27 @@ func NewConsole(renderer Renderer, evaluator Evaluator) *Console {
 	}
 	go console.loop()
 	return console
+}
+
+// Return the current renderer.
+func (console *Console) Renderer() Renderer {
+	console.mu.RLock()
+	renderer := console.renderer
+	console.mu.RUnlock()
+	return renderer
+}
+
+// Set a new renderer and return it.
+func (console *Console) SetRenderer(renderer Renderer) Renderer {
+	if renderer != nil {
+		console.Pause(true)
+		done := make(chan bool)
+		console.renderer.EventCh() <- TerminateEvent{true, done, console}
+		<-done
+		console.renderer = renderer
+		console.Pause(false)
+	}
+	return renderer
 }
 
 // Dump the console content as a string.
@@ -334,11 +364,15 @@ func (console *Console) ClearCommandline() {
 }
 
 // Pause/Unpause the console. When the console is paused no events
-// will be sent to the renderer. However, client-code could change the
+// will be sent to the renderer. Meanwhile, client-code can change the
 // internal state of the console through the API.
 func (console *Console) Pause(value bool) {
+	console.mu.Lock()
 	console.paused = value
-	console.renderer.EventCh() <- PauseEvent{value, console}
+	console.mu.Unlock()
+	done := make(chan bool)
+	console.renderer.EventCh() <- PauseEvent{value, done, console}
+	<-done
 }
 
 // Check if the console is paused.
@@ -367,7 +401,12 @@ func (console *Console) loop() {
 	ticker := time.NewTicker(CURSOR_BLINK_TIME)
 	for {
 		<-ticker.C // Blink cursor
-		if !console.paused {
+
+		console.mu.RLock()
+		paused := console.paused
+		console.mu.RUnlock()
+
+		if !paused {
 			console.renderer.EventCh() <- UpdateCursorEvent{console.commandLine, toggleCursor}
 			toggleCursor = !toggleCursor
 		}

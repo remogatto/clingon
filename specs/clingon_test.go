@@ -74,21 +74,34 @@ func (s *specsSuite) should_scroll_up_down() {
 	for i := 0; i < 40; i++ {
 		s.True(Interact([]Interactor{NewEnterCommand(console, fmt.Sprintf("Line %d", i), 0)}))
 	}
-	sdlrenderer.ScrollCh() <- clingon.SCROLL_UP
+	console.Renderer().(*clingon.SDLRenderer).ScrollCh() <- clingon.SCROLL_UP
 	time.Sleep(1e9)
-	sdlrenderer.ScrollCh() <- clingon.SCROLL_UP
+	console.Renderer().(*clingon.SDLRenderer).ScrollCh() <- clingon.SCROLL_UP
 	time.Sleep(1e9)
-	sdlrenderer.ScrollCh() <- clingon.SCROLL_DOWN
+	console.Renderer().(*clingon.SDLRenderer).ScrollCh() <- clingon.SCROLL_DOWN
 	time.Sleep(1e9)
-	sdlrenderer.ScrollCh() <- clingon.SCROLL_DOWN
+	console.Renderer().(*clingon.SDLRenderer).ScrollCh() <- clingon.SCROLL_DOWN
 	time.Sleep(1e9)
 	s.True(true)
 }
 
 func (s *specsSuite) should_pause_unpause() {
+	console.Print("Pause the console")
 	console.Pause(true)
 	time.Sleep(2e9)
+	console.Print("Unpause the console")
 	console.Pause(false)
+	time.Sleep(2e9)
+	s.True(true)
+}
+
+func (s *specsSuite) should_set_a_new_renderer() {
+	console.Print("Cursor should blink before switching to the new renderer")
+	time.Sleep(2e9)
+	newRenderer := clingon.NewSDLRenderer(sdl.CreateRGBSurface(sdl.SRCALPHA, int(consoleW), int(consoleH), 32, 0, 0, 0, 0), font)
+	newRenderer.GetSurface().SetAlpha(sdl.SRCALPHA, 0xdd)
+	newRenderingLoop(console.SetRenderer(newRenderer).(*clingon.SDLRenderer))
+	console.Print("Cursor should blink after switching to the new renderer")
 	time.Sleep(2e9)
 	s.True(true)
 }

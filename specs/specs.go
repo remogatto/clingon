@@ -15,9 +15,9 @@ const (
 )
 
 var (
-	console                                *clingon.Console
-	echoer                                 Echoer
-	sdlrenderer                            *clingon.SDLRenderer
+	console *clingon.Console
+	echoer  Echoer
+	font                                   *ttf.Font
 	appSurface, gopher                     *sdl.Surface
 	appSurfaceW, appSurfaceH               = 640, 480
 	consoleX, consoleY, consoleW, consoleH = int16(40), int16(40), uint16(560), uint16(400)
@@ -121,7 +121,7 @@ func initTest() {
 		panic(sdl.GetError())
 	}
 
-	font := ttf.OpenFont("../testdata/VeraMono.ttf", 12)
+	font = ttf.OpenFont("../testdata/VeraMono.ttf", 12)
 
 	if font == nil {
 		panic(sdl.GetError())
@@ -130,15 +130,19 @@ func initTest() {
 	appSurface = sdl.SetVideoMode(appSurfaceW, appSurfaceH, 32, 0)
 	gopher = sdl.Load("../testdata/gopher.jpg")
 
-	sdlrenderer = clingon.NewSDLRenderer(sdl.CreateRGBSurface(sdl.SRCALPHA, int(consoleW), int(consoleH), 32, 0, 0, 0, 0), font)
+	sdlrenderer := clingon.NewSDLRenderer(sdl.CreateRGBSurface(sdl.SRCALPHA, int(consoleW), int(consoleH), 32, 0, 0, 0, 0), font)
 	sdlrenderer.GetSurface().SetAlpha(sdl.SRCALPHA, 0xaa)
 
 	console = clingon.NewConsole(sdlrenderer, &Echoer{})
 	console.Print("Welcome to the CLIngon shell!\n\n")
 
-	render(nil, consoleY)
+	render(sdlrenderer, nil, consoleY)
 
-	go func() {
+	newRenderingLoop(sdlrenderer)
+}
+
+func newRenderingLoop(sdlrenderer *clingon.SDLRenderer) {
+	go func(sdlrenderer *clingon.SDLRenderer) {
 		var y float64
 		for {
 			select {
@@ -146,20 +150,19 @@ func initTest() {
 				return
 			case y = <-slideDown.ValueCh():
 				console.Pause(true)
-				render(nil, 40+int16(y))
+				render(sdlrenderer, nil, 40+int16(y))
 			case y = <-slideUp.ValueCh():
 				console.Pause(true)
-				render(nil, 40+int16(y))
+				render(sdlrenderer, nil, 40+int16(y))
 			case rects := <-sdlrenderer.UpdatedRectsCh():
-				render(rects, int16(y))
+				render(sdlrenderer, rects, int16(y))
 			}
 
 		}
-	}()
-
+	}(sdlrenderer)
 }
 
-func render(updatedRects []sdl.Rect, y int16) {
+func render(sdlrenderer *clingon.SDLRenderer, updatedRects []sdl.Rect, y int16) {
 	if updatedRects == nil {
 		appSurface.Blit(nil, gopher, nil)
 		appSurface.Blit(&sdl.Rect{consoleX, y, 0, 0}, sdlrenderer.GetSurface(), nil)

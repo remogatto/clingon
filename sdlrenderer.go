@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	MAX_INTERNAL_SIZE_FACTOR     = 3
+	MAX_INTERNAL_SIZE_FACTOR = 3
 )
 
 const (
@@ -16,6 +16,11 @@ const (
 	SCROLL_UP_ANIMATION
 	SCROLL_DOWN_ANIMATION
 )
+
+type PauseCmd struct {
+	paused bool
+	done   chan bool
+}
 
 type SDLRenderer struct {
 	// Activate/deactivate blended text rendering. By default use
@@ -35,7 +40,8 @@ type SDLRenderer struct {
 	eventCh                   chan interface{}
 	scrollCh                  chan int
 	updatedRectsCh            chan []sdl.Rect
-	pauseCh                   chan bool
+	pauseCh                   chan *PauseCmd
+	terminateCh               chan bool
 	updatedRects              []sdl.Rect
 	viewportY                 int16
 	commandLineRect           *sdl.Rect
@@ -45,7 +51,7 @@ type SDLRenderer struct {
 	width, height             uint16 // visible surface width, height
 	cursorWidth, cursorHeight uint16 // cursor width, height
 	fontWidth, fontHeight     int    // font width, height
-	paused                    bool
+	paused, terminated        bool
 }
 
 func NewSDLRenderer(surface *sdl.Surface, font *ttf.Font) *SDLRenderer {
@@ -59,7 +65,8 @@ func NewSDLRenderer(surface *sdl.Surface, font *ttf.Font) *SDLRenderer {
 		Font:           font,
 		eventCh:        make(chan interface{}),
 		scrollCh:       make(chan int),
-		pauseCh:        make(chan bool),
+		pauseCh:        make(chan *PauseCmd),
+		terminateCh:    make(chan bool),
 		updatedRectsCh: make(chan []sdl.Rect),
 		updatedRects:   make([]sdl.Rect, 0),
 		width:          rect.W,
@@ -101,7 +108,7 @@ func (renderer *SDLRenderer) ScrollCh() chan<- int {
 }
 
 // Tell the renderer to pause its operations.
-func (renderer *SDLRenderer) PauseCh() chan<- bool {
+func (renderer *SDLRenderer) PauseCh() chan<- *PauseCmd {
 	return renderer.pauseCh
 }
 
@@ -307,7 +314,6 @@ func (renderer *SDLRenderer) render(rects []sdl.Rect) {
 		renderer.visibleSurface.Blit(nil, renderer.internalSurface, &sdl.Rect{0, renderer.viewportY, renderer.width, h})
 		renderer.updatedRects = append(renderer.updatedRects, sdl.Rect{0, 0, renderer.width, renderer.height})
 	}
-
 	renderer.updatedRectsCh <- renderer.updatedRects
 	renderer.updatedRects = make([]sdl.Rect, 0)
 }
@@ -316,10 +322,20 @@ func (renderer *SDLRenderer) loop() {
 	// Control goroutine
 	go func() {
 		for {
-			renderer.paused = <-renderer.pauseCh
+			select {
+			case cmd := <-renderer.pauseCh:
+				renderer.paused = cmd.paused
+				cmd.done <- true
+			case <-renderer.terminateCh:
+				return
+			}
 		}
 	}()
+
 	for {
+
+	restart:
+
 		if !renderer.paused {
 			select {
 			case untyped_event := <-renderer.eventCh:
@@ -336,7 +352,11 @@ func (renderer *SDLRenderer) loop() {
 					renderer.enableCursor(event.enabled)
 					renderer.renderCursor(event.commandLine)
 				case PauseEvent:
-					renderer.paused = event.paused
+					done := make(chan bool)
+					renderer.pauseCh <- &PauseCmd{event.paused, done}
+					<-done
+					event.done <- true
+					goto restart
 				}
 				renderer.render(renderer.updatedRects)
 			case dir := <-renderer.scrollCh:
@@ -359,10 +379,16 @@ func (renderer *SDLRenderer) loop() {
 			case untyped_event := <-renderer.eventCh:
 				switch event := untyped_event.(type) {
 				case PauseEvent:
-					renderer.paused = event.paused
 					if !event.paused { // if unpaused re-render the console
 						renderer.renderConsole(event.console)
 					}
+					renderer.pauseCh <- &PauseCmd{event.paused, event.done}
+					goto restart
+				case TerminateEvent:
+					renderer.terminateCh <- true
+					renderer.internalSurface.Free()
+					event.done <- true
+					return
 				}
 			case <-renderer.scrollCh:
 			case <-renderer.Animations[SCROLL_UP_ANIMATION].ValueCh():
