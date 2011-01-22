@@ -81,7 +81,7 @@ func NewSDLRenderer(surface *sdl.Surface, font *ttf.Font) *SDLRenderer {
 	renderer.cursorWidth = uint16(fontWidth)
 	renderer.cursorHeight = uint16(fontHeight)
 
-	renderer.lastVisibleLine = int(float(renderer.height)/float(renderer.fontHeight)) * MAX_INTERNAL_SIZE_FACTOR
+	renderer.lastVisibleLine = (int(renderer.height)/renderer.fontHeight) * MAX_INTERNAL_SIZE_FACTOR
 	renderer.internalSurfaceMaxHeight = renderer.height * MAX_INTERNAL_SIZE_FACTOR
 
 	renderer.internalSurface = sdl.CreateRGBSurface(sdl.SWSURFACE, int(renderer.width), int(renderer.fontHeight), 32, 0, 0, 0, 0)
