@@ -31,11 +31,13 @@ type consoleTestSuite struct {
 }
 
 func (s *consoleTestSuite) before() {
-	console = NewConsole(NewTestRenderer(), nil)
+	console = NewConsole(nil)
+	console.SetRenderer(NewTestRenderer())
 }
 
 func (s *consoleTestSuite) testNewConsole() {
-	console := NewConsole(NewTestRenderer(), nil)
+	console := NewConsole(nil)
+	console.SetRenderer(NewTestRenderer())
 	s.NotNil(console)
 	s.NotNil(console.lines)
 }

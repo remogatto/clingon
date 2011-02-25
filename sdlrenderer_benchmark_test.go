@@ -30,7 +30,7 @@ func initSDL() {
 	appSurface = sdl.SetVideoMode(640, 480, 32, 0)
 	sdlrenderer = NewSDLRenderer(sdl.CreateRGBSurface(sdl.SRCALPHA, 640, 480, 32, 0, 0, 0, 0), font)
 	sdlrenderer.GetSurface().SetAlpha(sdl.SRCALPHA, 0xaa)
-	console = NewConsole(nil, nil)
+	console = NewConsole(nil)
 
 	go func() {
 		for {

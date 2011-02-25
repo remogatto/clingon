@@ -14,19 +14,28 @@ const (
 	KEY_DOWN
 )
 
-var (
-	console *clingon.Console
-	echoer  Echoer
-	font                                   *ttf.Font
-	appSurface, gopher                     *sdl.Surface
+const (
 	appSurfaceW, appSurfaceH               = 640, 480
-	consoleX, consoleY, consoleW, consoleH = int16(40), int16(40), uint16(560), uint16(400)
-	distance                               = float64(uint16(appSurfaceH) - (uint16(appSurfaceH)-consoleH)/2)
-	finished                               bool
-
-	slideUp, slideDown = clingon.NewSlideUpAnimation(1e9, distance), clingon.NewSlideDownAnimation(1e9, distance)
-	terminateRendering = make(chan bool)
+	consoleX, consoleY, consoleW, consoleH = 40, 40, 560, 400
 )
+
+var (
+	console            *clingon.Console
+	echoer             Echoer
+	font               *ttf.Font
+	appSurface, gopher *sdl.Surface
+	distance           = float64(uint16(appSurfaceH) - (uint16(appSurfaceH)-consoleH)/2)
+	finished           bool
+
+	animationCh             = make(chan NewAnimation)
+	terminateRendering      = make(chan byte)
+	renderingLoopTerminated = make(chan byte)
+)
+
+type NewAnimation struct {
+	animation *clingon.Animation
+	direction int // SCROLL_UP or SCROOL_DOWN
+}
 
 type Echoer struct{}
 
@@ -133,33 +142,54 @@ func initTest() {
 	sdlrenderer := clingon.NewSDLRenderer(sdl.CreateRGBSurface(sdl.SRCALPHA, int(consoleW), int(consoleH), 32, 0, 0, 0, 0), font)
 	sdlrenderer.GetSurface().SetAlpha(sdl.SRCALPHA, 0xaa)
 
-	console = clingon.NewConsole(sdlrenderer, &Echoer{})
-	console.Print("Welcome to the CLIngon shell!\n\n")
-
-	render(sdlrenderer, nil, consoleY)
-
 	newRenderingLoop(sdlrenderer)
+
+	console = clingon.NewConsole(&Echoer{})
+	console.SetRenderer(sdlrenderer)
+	console.Print("Welcome to the CLIngon shell!\n\n")
 }
 
 func newRenderingLoop(sdlrenderer *clingon.SDLRenderer) {
-	go func(sdlrenderer *clingon.SDLRenderer) {
-		var y float64
+	go func() {
+		var y int16
+		breakLoop := make(chan byte)
+
+		var animationValueCh <-chan float64 = nil
+		var animationDirection int
+
+	loop:
 		for {
 			select {
 			case <-terminateRendering:
-				return
-			case y = <-slideDown.ValueCh():
-				console.Pause(true)
-				render(sdlrenderer, nil, 40+int16(y))
-			case y = <-slideUp.ValueCh():
-				console.Pause(true)
-				render(sdlrenderer, nil, 40+int16(y))
-			case rects := <-sdlrenderer.UpdatedRectsCh():
-				render(sdlrenderer, rects, int16(y))
-			}
+				go func() {
+					done := make(chan bool)
+					sdlrenderer.EventCh() <- clingon.Cmd_Terminate{done}
+					<-done
 
+					breakLoop <- 0
+				}()
+
+			case <-breakLoop:
+				renderingLoopTerminated <- 0
+				break loop
+
+			case animationSpec := <-animationCh:
+				animationValueCh = animationSpec.animation.ValueCh()
+				animationDirection = animationSpec.direction
+
+			case value := <-animationValueCh:
+				if animationDirection == clingon.SCROLL_DOWN {
+					y = 40 + int16(value)
+				} else {
+					y = appSurfaceH - int16(value)
+				}
+				render(sdlrenderer, nil, y)
+
+			case rects := <-sdlrenderer.UpdatedRectsCh():
+				render(sdlrenderer, rects, y)
+			}
 		}
-	}(sdlrenderer)
+	}()
 }
 
 func render(sdlrenderer *clingon.SDLRenderer, updatedRects []sdl.Rect, y int16) {

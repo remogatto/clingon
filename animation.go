@@ -5,103 +5,131 @@ import (
 	"math"
 )
 
-const DEFAULT_ANIMATION_FPS = 30.0
-
-const (
-	ANIMATION_START = iota
-	ANIMATION_STOP
-	ANIMATION_PAUSE
-)
+const DEFAULT_ANIMATION_FPS = 30
 
 type Animation struct {
-	f          func(t int64) float64
-	duration   int64
-	valueCh    chan float64
-	finishedCh chan bool
-	paused     bool
-	t          int64
+	f           func(t float64) float64
+	length      float64 // Length, in seconds
+	t           float64 // Time, in seconds
+	dt          float64 // Time step, in seconds
+	valueCh     chan float64
+	finishedCh  chan bool
+	terminateCh chan bool // Sending a value to this channel terminates the animation
+
+	// This is used to ensure correctness
+	running bool
 }
 
-func NewAnimation(f func(t int64) float64, duration int64) *Animation {
-	animation := &Animation{
-		f:          f,
-		duration:   duration,
-		valueCh:    make(chan float64),
-		finishedCh: make(chan bool),
+// Creates a new animation.
+// The values of 't' and 'length' are in seconds.
+// Call 'Animation.Start' to start the animation.
+func NewAnimation(f func(t float64) float64, length float64) *Animation {
+	if length <= 0 {
+		panic("non-positive length")
 	}
 
-	go animation.animate()
+	animation := &Animation{
+		f:           f,
+		length:      length,
+		t:           0,
+		dt:          length / DEFAULT_ANIMATION_FPS,
+		valueCh:     make(chan float64, 1),
+		finishedCh:  make(chan bool, 1),
+		terminateCh: make(chan bool, 1),
+		running:     false,
+	}
 
 	return animation
 }
 
+// Starts the animation.
+// This method can be called at most once per an Animation object.
 func (animation *Animation) Start() {
-	animation.paused = false
+	if !animation.running {
+		// Note: the "+1" ensures that the argument to NewTicker is >= 1
+		ticker := time.NewTicker(int64(1e9*animation.dt) + 1)
+		go animation.animate(ticker)
+
+		animation.running = true
+	} else {
+		panic("already started")
+	}
 }
 
-func (animation *Animation) Pause() int64 {
-	animation.paused = true
-	return animation.t
+// Tells the animation that it should terminate.
+// This method returns immediately.
+// It is safe to call this method even if the animation has ended on its own.
+func (animation *Animation) Terminate() {
+	if !animation.running {
+		panic("not started")
+	}
+
+	// The channel has a buffer with size 1.
+	// Only the 1st value ever sent through the channel is significant,
+	// subsequent attempts to send another value can be ignored.
+	select {
+	case animation.terminateCh <- true: // Non-blocking send
+	default:
+	}
 }
 
-func (animation *Animation) Resume(t int64) {
-	animation.paused = false
-	animation.t = t
-}
-
+// The channel through which the animation delivers its consequetive values.
+// This channel is never closed.
 func (animation *Animation) ValueCh() <-chan float64 {
 	return animation.valueCh
 }
 
+// This channel will receive a single value [when the animation ends]
+// or [after the animation has been terminated]
+// This channel is never closed.
 func (animation *Animation) FinishedCh() <-chan bool {
 	return animation.finishedCh
 }
 
-func (animation *Animation) animate() {
-	var (
-		time_step = int64(1e9 / int64(DEFAULT_ANIMATION_FPS))
-		ticker    = time.NewTicker(time_step)
-	)
+func (animation *Animation) animate(ticker *time.Ticker) {
+	// Send the 1st value
+	animation.valueCh <- animation.f(animation.t)
 
-	animation.paused = true
-
+loop:
 	for {
-		if !animation.paused {
-			select {
-			case <-ticker.C:
-				if (animation.t <= animation.duration) || (animation.duration < 0) {
-					next_t := animation.t + time_step
-					if next_t > animation.duration && animation.duration > 0 {
-						animation.t = animation.duration
-					}
-					animation.valueCh <- animation.f(animation.t)
-					animation.t = next_t
-				} else {
-					animation.t = 0
-					animation.paused = true
-					animation.finishedCh <- true
-				}
+		select {
+		case <-ticker.C:
+			animation.t += animation.dt
+
+			t := animation.t
+			if t > animation.length {
+				t = animation.length
 			}
-		} else {
+
+			// Non-blocking send, the channel has a buffer with size 1
 			select {
-			case <-ticker.C:
+			case animation.valueCh <- animation.f(t):
+				// Sent successfully
+			default:
+				// The value-receiver has not processed the previous value,
+				// the current value is silently discarded
 			}
+
+			// End of animation
+			if animation.t >= animation.length {
+				break loop
+			}
+
+		case <-animation.terminateCh:
+			break loop
 		}
 	}
+
+	ticker.Stop()
+	animation.finishedCh <- true
 }
 
-func NewSlideDownAnimation(duration int64, distance float64) *Animation {
-	return NewAnimation(func(t int64) float64 {
-		arc := (1 - float64(t)/float64(duration)) * (math.Pi / 2)
-		return float64(distance) * (math.Cos(arc))
-	},
-		duration)
-}
-
-func NewSlideUpAnimation(duration int64, distance float64) *Animation {
-	return NewAnimation(func(t int64) float64 {
-		arc := float64(t) / float64(duration) * (math.Pi / 2)
-		return float64(distance) * (math.Cos(arc))
-	},
-		duration)
+// Convenience function that creates a new animation going from 0.0 to 'distance'.
+// The length is specified in seconds.
+func NewSliderAnimation(length float64, distance float64) *Animation {
+	f := func(t float64) float64 {
+		arc := t / length * (math.Pi / 2)
+		return distance * math.Pow(math.Sin(arc), 0.8)
+	}
+	return NewAnimation(f, length)
 }

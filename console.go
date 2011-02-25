@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	CARRIAGE_RETURN = 0X000d
+	CARRIAGE_RETURN = 0x000d
 	BACKSPACE       = 0x0008
+	DELETE          = 0x007f
 
 	CURSOR_BLINK_TIME = 5e8
 
@@ -24,70 +25,39 @@ type Evaluator interface {
 	Run(console *Console, command string) os.Error
 }
 
-type UpdateConsoleEvent struct {
+type Cmd_UpdateConsole struct {
 	console *Console
 }
 
-type InsertCharEvent struct {
-	console *Console
-	char    uint16
-}
-
-type BackspaceEvent struct {
-	console *Console
-}
-
-type NewlineEvent struct {
-	console *Console
-}
-
-type MoveCursorEvent struct {
-	console        *Console
-	cursorPosition int
-}
-
-type UpdateCursorEvent struct {
+type Cmd_UpdateCursor struct {
 	commandLine *commandLine
 	enabled     bool
 }
 
-type UpdateCommandLineEvent struct {
+type Cmd_UpdateCommandLine struct {
 	console     *Console
 	commandLine *commandLine
 }
 
-// Pause/Unpause related event
-type PauseEvent struct {
-	paused  bool
-	done    chan bool
-	console *Console
-}
-
-// Terminate renderer event
-type TerminateEvent struct {
-	terminate bool
-	done      chan bool
-	console   *Console
-}
-
 type Renderer interface {
-	// Receive Event objects from the console
+	// Receive Cmd_* objects from the console
 	EventCh() chan<- interface{}
 }
 
 type commandLine struct {
 	prompt string
 
-	// the content of the prompt line as a string vector
+	// The content of the prompt line as a string vector
 	content *vector.StringVector
 
-	// the history of the command line
-	history *vector.Vector
+	// The history of the command line.
+	// This is a vector of '*vector.StringVector'.
+	history vector.Vector
 
 	// Cursor position on current line
 	cursorPosition int
 
-	historyCount int
+	historyPosition int
 }
 
 func stringVectorToString(v *vector.StringVector) string {
@@ -100,11 +70,10 @@ func stringVectorToString(v *vector.StringVector) string {
 
 func newCommandLine(prompt string) *commandLine {
 	return &commandLine{
-		prompt:         prompt,
-		content:        new(vector.StringVector),
-		history:        new(vector.Vector),
-		cursorPosition: 0,
-		historyCount:   0,
+		prompt:          prompt,
+		content:         new(vector.StringVector),
+		cursorPosition:  0,
+		historyPosition: 0,
 	}
 }
 
@@ -124,9 +93,16 @@ func (commandLine *commandLine) insertChar(str string) {
 }
 
 // Delete the character on the left of the current cursor position
-func (commandLine *commandLine) backSpace() {
-	commandLine.decCursorPosition(1)
-	if commandLine.content.Len() > 0 {
+func (commandLine *commandLine) key_backspace() {
+	if commandLine.cursorPosition >= 1 {
+		commandLine.decCursorPosition(1)
+		commandLine.content.Delete(commandLine.cursorPosition)
+	}
+}
+
+// Delete the character at the current cursor position
+func (commandLine *commandLine) key_delete() {
+	if commandLine.cursorPosition < commandLine.content.Len() {
 		commandLine.content.Delete(commandLine.cursorPosition)
 	}
 }
@@ -135,25 +111,25 @@ func (commandLine *commandLine) backSpace() {
 func (commandLine *commandLine) clear() {
 	commandLine.content = new(vector.StringVector)
 	commandLine.cursorPosition = 0
-	commandLine.historyCount = commandLine.history.Len()
+	commandLine.historyPosition = commandLine.history.Len()
 }
 
 // Browse history on the command line
 func (commandLine *commandLine) browseHistory(direction int) {
 	if direction == HISTORY_NEXT {
-		commandLine.historyCount++
+		commandLine.historyPosition++
 	} else {
-		commandLine.historyCount--
+		commandLine.historyPosition--
 	}
-	if commandLine.historyCount < 0 {
-		commandLine.historyCount = 0
+	if commandLine.historyPosition < 0 {
+		commandLine.historyPosition = 0
 		return
 	}
-	if commandLine.historyCount >= commandLine.history.Len() {
+	if commandLine.historyPosition >= commandLine.history.Len() {
 		commandLine.clear()
 		return
 	}
-	newContent := commandLine.history.At(commandLine.historyCount).(*vector.StringVector).Copy()
+	newContent := commandLine.history.At(commandLine.historyPosition).(*vector.StringVector).Copy()
 	commandLine.content = &newContent
 	commandLine.incCursorPosition(len(commandLine.toString()))
 }
@@ -201,7 +177,7 @@ func (commandLine *commandLine) incCursorPosition(inc int) {
 }
 
 func (commandLine *commandLine) notInHistory(line string) bool {
-	for _, v := range *commandLine.history {
+	for _, v := range commandLine.history {
 		strVector := v.(*vector.StringVector)
 		historyEntry := stringVectorToString(strVector)
 		if line == historyEntry {
@@ -212,49 +188,42 @@ func (commandLine *commandLine) notInHistory(line string) bool {
 }
 
 type Console struct {
-	paused      bool                 // Is the console paused?
-	commandLine *commandLine         // An instance of the commandline
-	lines       *vector.StringVector // Lines of text above the commandline 
-	renderer    Renderer
-	evaluator   Evaluator
-	mu          sync.RWMutex
+	commandLine     *commandLine         // An instance of the commandline
+	lines           *vector.StringVector // Lines of text above the commandline
+	renderer_orNil  Renderer
+	evaluator_orNil Evaluator
+	mu              sync.RWMutex
 }
 
-// Initialize a new console object passing to it a renderer and an
-// evaluator. The evaluator argument can be nil.
-func NewConsole(renderer Renderer, evaluator Evaluator) *Console {
+// Initialize a new console object passing to it an evaluator
+func NewConsole(evaluator_orNil Evaluator) *Console {
 	console := &Console{
-		lines:       new(vector.StringVector),
-		commandLine: newCommandLine("console> "),
-		renderer:    renderer,
-		evaluator:   evaluator,
-	}
-	if renderer == nil {
-		panic("Renderer can't be nil")
+		lines:           new(vector.StringVector),
+		commandLine:     newCommandLine("console> "),
+		renderer_orNil:  nil,
+		evaluator_orNil: evaluator_orNil,
 	}
 	go console.loop()
 	return console
 }
 
 // Return the current renderer.
-func (console *Console) Renderer() Renderer {
+func (console *Console) RendererOrNil() Renderer {
 	console.mu.RLock()
-	renderer := console.renderer
+	renderer := console.renderer_orNil
 	console.mu.RUnlock()
 	return renderer
 }
 
-// Set a new renderer and return it.
-func (console *Console) SetRenderer(renderer Renderer) Renderer {
-	if renderer != nil {
-		console.Pause(true)
-		done := make(chan bool)
-		console.renderer.EventCh() <- TerminateEvent{true, done, console}
-		<-done
-		console.renderer = renderer
-		console.Pause(false)
+// Replace the current renderer with a new one
+func (console *Console) SetRenderer(renderer_orNil Renderer) {
+	console.mu.Lock()
+	console.renderer_orNil = renderer_orNil
+	console.mu.Unlock()
+
+	if renderer_orNil != nil {
+		renderer_orNil.EventCh() <- Cmd_UpdateConsole{console}
 	}
-	return renderer
 }
 
 // Dump the console content as a string.
@@ -277,8 +246,12 @@ func (console *Console) PrintLines(strings []string) {
 	if len(strings) > 0 {
 		console.pushLines(strings)
 	}
-	if !console.paused {
-		console.renderer.EventCh() <- UpdateConsoleEvent{console}
+
+	console.mu.RLock()
+	renderer := console.renderer_orNil
+	console.mu.RUnlock()
+	if renderer != nil {
+		renderer.EventCh() <- Cmd_UpdateConsole{console}
 	}
 }
 
@@ -288,8 +261,12 @@ func (console *Console) Print(str string) {
 	if str != "" {
 		console.pushLines(strings.Split(str, "\n", -1))
 	}
-	if !console.paused {
-		console.renderer.EventCh() <- UpdateConsoleEvent{console}
+
+	console.mu.RLock()
+	renderer := console.renderer_orNil
+	console.mu.RUnlock()
+	if renderer != nil {
+		renderer.EventCh() <- Cmd_UpdateConsole{console}
 	}
 }
 
@@ -304,28 +281,38 @@ func (console *Console) PutCommand(command string) {
 	console.PutUnicode(CARRIAGE_RETURN)
 }
 
-// Put an unicode value on the commandline at the current cursor
-// position.
+// Put an unicode value on the command-line at the current cursor position.
 func (console *Console) PutUnicode(value uint16) {
 	var event interface{}
+
 	switch value {
-	case BACKSPACE: // BACKSPACE
-		console.commandLine.backSpace()
-		event = UpdateCommandLineEvent{console, console.commandLine}
-	case CARRIAGE_RETURN: // RETURN
+	case BACKSPACE:
+		console.commandLine.key_backspace()
+		event = Cmd_UpdateCommandLine{console, console.commandLine}
+
+	case DELETE:
+		console.commandLine.key_delete()
+		event = Cmd_UpdateCommandLine{console, console.commandLine}
+
+	case CARRIAGE_RETURN:
 		command := console.carriageReturn()
-		if console.evaluator != nil {
-			if err := console.evaluator.Run(console, command); err != nil {
+		if console.evaluator_orNil != nil {
+			if err := console.evaluator_orNil.Run(console, command); err != nil {
 				console.Print(err.String())
 			}
 		}
-		event = UpdateConsoleEvent{console}
+		event = Cmd_UpdateConsole{console}
+
 	default:
 		console.commandLine.insertChar(string(value))
-		event = UpdateCommandLineEvent{console, console.commandLine}
+		event = Cmd_UpdateCommandLine{console, console.commandLine}
 	}
-	if !console.paused {
-		console.renderer.EventCh() <- event
+
+	console.mu.RLock()
+	renderer := console.renderer_orNil
+	console.mu.RUnlock()
+	if renderer != nil {
+		renderer.EventCh() <- event
 	}
 }
 
@@ -339,8 +326,12 @@ func (console *Console) PutReadline(command int) {
 	case CURSOR_LEFT, CURSOR_RIGHT:
 		console.commandLine.moveCursor(command)
 	}
-	if !console.paused {
-		console.renderer.EventCh() <- UpdateCommandLineEvent{console, console.commandLine}
+
+	console.mu.RLock()
+	renderer := console.renderer_orNil
+	console.mu.RUnlock()
+	if renderer != nil {
+		renderer.EventCh() <- Cmd_UpdateCommandLine{console, console.commandLine}
 	}
 }
 
@@ -350,34 +341,25 @@ func (console *Console) PutString(str string) {
 	for _, c := range str {
 		console.commandLine.insertChar(string(c))
 	}
-	if !console.paused {
-		console.renderer.EventCh() <- UpdateCommandLineEvent{console, console.commandLine}
+
+	console.mu.RLock()
+	renderer := console.renderer_orNil
+	console.mu.RUnlock()
+	if renderer != nil {
+		renderer.EventCh() <- Cmd_UpdateCommandLine{console, console.commandLine}
 	}
 }
 
 // Clear the commandline.
 func (console *Console) ClearCommandline() {
 	console.commandLine.clear()
-	if !console.paused {
-		console.renderer.EventCh() <- UpdateCommandLineEvent{console, console.commandLine}
+
+	console.mu.RLock()
+	renderer := console.renderer_orNil
+	console.mu.RUnlock()
+	if renderer != nil {
+		renderer.EventCh() <- Cmd_UpdateCommandLine{console, console.commandLine}
 	}
-}
-
-// Pause/Unpause the console. When the console is paused no events
-// will be sent to the renderer. Meanwhile, client-code can change the
-// internal state of the console through the API.
-func (console *Console) Pause(value bool) {
-	console.mu.Lock()
-	console.paused = value
-	console.mu.Unlock()
-	done := make(chan bool)
-	console.renderer.EventCh() <- PauseEvent{value, done, console}
-	<-done
-}
-
-// Check if the console is paused.
-func (console *Console) Paused() bool {
-	return console.paused
 }
 
 // Push lines of text on the console. The argument is a slice of
@@ -388,8 +370,8 @@ func (console *Console) pushLines(lines []string) {
 	}
 }
 
-// Push the current commandline in the console history. Return it has
-// a string.
+// Push the current commandline in the console history.
+// Return it as a string.
 func (console *Console) carriageReturn() string {
 	commandLine := console.commandLine.push()
 	console.lines.Push(console.commandLine.prompt + commandLine)
@@ -403,12 +385,12 @@ func (console *Console) loop() {
 		<-ticker.C // Blink cursor
 
 		console.mu.RLock()
-		paused := console.paused
+		renderer := console.renderer_orNil
 		console.mu.RUnlock()
-
-		if !paused {
-			console.renderer.EventCh() <- UpdateCursorEvent{console.commandLine, toggleCursor}
-			toggleCursor = !toggleCursor
+		if renderer != nil {
+			renderer.EventCh() <- Cmd_UpdateCursor{console.commandLine, toggleCursor}
 		}
+
+		toggleCursor = !toggleCursor
 	}
 }
