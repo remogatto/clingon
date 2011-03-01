@@ -50,6 +50,7 @@ type SDLRenderer struct {
 	commandLineRect          *sdl.Rect
 	cursorY                  int
 	lastVisibleLine          uint
+	internalSurfaceHeight    uint
 	internalSurfaceMaxHeight uint
 	width, height            uint // visible surface width, height
 	fontWidth, fontHeight    uint
@@ -77,9 +78,12 @@ func NewSDLRenderer(surface *sdl.Surface, font *ttf.Font) *SDLRenderer {
 	renderer.fontHeight = uint(fontHeight)
 
 	renderer.lastVisibleLine = (renderer.height / renderer.fontHeight) * MAX_INTERNAL_SIZE_FACTOR
-	renderer.internalSurfaceMaxHeight = renderer.height * MAX_INTERNAL_SIZE_FACTOR
 
-	renderer.internalSurface = sdl.CreateRGBSurface(sdl.SWSURFACE, int(renderer.width), int(renderer.fontHeight), 32, 0, 0, 0, 0)
+	renderer.internalSurfaceHeight = uint(renderer.fontHeight)
+	renderer.internalSurfaceMaxHeight = renderer.height * MAX_INTERNAL_SIZE_FACTOR
+	renderer.internalSurface = sdl.CreateRGBSurface(sdl.SWSURFACE,
+		int(renderer.width), int(renderer.internalSurfaceHeight), 32, 0, 0, 0, 0)
+
 	renderer.calcCommandLineRect()
 
 	renderer.updatedRects = append(renderer.updatedRects, sdl.Rect{0, 0, uint16(renderer.width), uint16(renderer.height)})
@@ -115,21 +119,21 @@ func (renderer *SDLRenderer) calcCommandLineRect() {
 }
 
 func (renderer *SDLRenderer) resizeInternalSurface(console *Console) {
-	if renderer.internalSurface != nil {
-		renderer.internalSurface.Free()
-	}
-
 	h := uint(console.lines.Len()+1) * renderer.fontHeight
-
 	if h > renderer.internalSurfaceMaxHeight {
 		h = renderer.internalSurfaceMaxHeight
 	}
 
-	renderer.internalSurface = sdl.CreateRGBSurface(sdl.SWSURFACE, int(renderer.width), int(h), 32, 0, 0, 0, 0)
-	renderer.calcCommandLineRect()
-	renderer.cursorY = int(renderer.commandLineRect.Y)
-	renderer.viewportY = int(renderer.internalSurface.H - renderer.visibleSurface.H)
-	renderer.internalSurface.SetClipRect(&sdl.Rect{0, 0, uint16(renderer.width), uint16(h)})
+	if renderer.internalSurfaceHeight != h {
+		renderer.internalSurface.Free()
+
+		renderer.internalSurface = sdl.CreateRGBSurface(sdl.SWSURFACE, int(renderer.width), int(h), 32, 0, 0, 0, 0)
+		renderer.calcCommandLineRect()
+		renderer.cursorY = int(renderer.commandLineRect.Y)
+		renderer.viewportY = int(renderer.internalSurface.H - renderer.visibleSurface.H)
+		renderer.internalSurfaceHeight = h
+		renderer.internalSurface.SetClipRect(&sdl.Rect{0, 0, uint16(renderer.width), uint16(h)})
+	}
 }
 
 func (renderer *SDLRenderer) renderCommandLine(commandLine *commandLine) {
@@ -148,8 +152,8 @@ func (renderer *SDLRenderer) renderConsole(console *Console) {
 			continue
 		}
 	}
-	renderer.addUpdatedRect(&sdl.Rect{0, 0, uint16(renderer.internalSurface.W), uint16(renderer.internalSurface.H)})
 	renderer.renderLine(0, console.commandLine.toString())
+	renderer.addUpdatedRect(&sdl.Rect{0, 0, uint16(renderer.internalSurface.W), uint16(renderer.internalSurface.H)})
 }
 
 func (renderer *SDLRenderer) enableCursor(enable bool) {
@@ -165,18 +169,23 @@ func (renderer *SDLRenderer) clearPrompt() {
 }
 
 func (renderer *SDLRenderer) renderLine(pos int, line string) {
-	var textSurface *sdl.Surface
+	x := renderer.commandLineRect.X
+	y := int16(renderer.commandLineRect.Y) - int16(renderer.fontHeight*uint(pos))
+	w := renderer.commandLineRect.W
+	h := renderer.commandLineRect.H
 
+	renderer.internalSurface.FillRect(&sdl.Rect{x, y, w, h}, 0)
+
+	if len(line) == 0 {
+		return
+	}
+
+	var textSurface *sdl.Surface
 	if renderer.Blended {
 		textSurface = ttf.RenderUTF8_Blended(renderer.Font, line, renderer.Color)
 	} else {
 		textSurface = ttf.RenderUTF8_Solid(renderer.Font, line, renderer.Color)
 	}
-
-	x := renderer.commandLineRect.X
-	y := int16(renderer.commandLineRect.Y) - int16(renderer.commandLineRect.H*uint16(pos))
-	w := renderer.commandLineRect.W
-	h := renderer.commandLineRect.H
 
 	if textSurface != nil {
 		renderer.internalSurface.Blit(&sdl.Rect{x, y, w, h}, textSurface, nil)
