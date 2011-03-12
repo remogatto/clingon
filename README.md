@@ -32,8 +32,7 @@ Because of its design, clingon could be a neat choice for adding
 console functionalities to games and graphical applications. For
 example, it is used in
 [gospeccy](https://github.com/remogatto/gospeccy/tree/clingon)
-(clingon branch) to provide a non-blocking CLI which runs in parallel
-with the emulator.
+to provide a non-blocking CLI which runs in parallel with the emulator.
 
 Moreover, the fact that console operations are isolated from the
 rendering backend allows for non-blocking graphical effects.
@@ -50,7 +49,7 @@ difficult to add more backends (e.g. opengl, draw/x11, etc.)
 
 # Features
 
-* Parallel design
+* Concurrent design
 * Graphical backend agnostic (currently an SDL renderer is included)
 * Console scrolling
 * Readline-like commands
