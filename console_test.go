@@ -30,25 +30,25 @@ type consoleTestSuite struct {
 	pt.Suite
 }
 
-func (s *consoleTestSuite) before() {
+func (s *consoleTestSuite) Before() {
 	console = NewConsole(nil)
 	console.SetRenderer(NewTestRenderer())
 }
 
-func (s *consoleTestSuite) testNewConsole() {
+func (s *consoleTestSuite) TestNewConsole() {
 	console := NewConsole(nil)
 	console.SetRenderer(NewTestRenderer())
 	s.NotNil(console)
 	s.NotNil(console.lines)
 }
 
-func (s *consoleTestSuite) testString() {
+func (s *consoleTestSuite) TestString() {
 	console.PutCommand("foo")
 	console.PutCommand("bar")
 	s.Equal("console> foo\nconsole> bar\nconsole> ", console.String())
 }
 
-func (s *consoleTestSuite) testPutUnicode() {
+func (s *consoleTestSuite) TestPutUnicode() {
 	console.PutUnicode(uint16([]int("a")[0]))
 	console.PutUnicode(uint16([]int("b")[0]))
 	console.PutUnicode(uint16([]int("c")[0]))
@@ -58,7 +58,7 @@ func (s *consoleTestSuite) testPutUnicode() {
 	s.Equal(3, console.commandLine.cursorPosition)
 }
 
-func (s *consoleTestSuite) testPrint() {
+func (s *consoleTestSuite) TestPrint() {
 	console.Print("foo\nbar\nbaz")
 	s.Equal("foo", console.lines.At(0))
 	s.Equal("bar", console.lines.At(1))
@@ -66,7 +66,7 @@ func (s *consoleTestSuite) testPrint() {
 	s.Equal("console> ", console.commandLine.toString())
 }
 
-func (s *consoleTestSuite) testPrintLines() {
+func (s *consoleTestSuite) TestPrintLines() {
 	console.PrintLines([]string{"foo", "bar", "baz"})
 	s.Equal("foo", console.lines.At(0))
 	s.Equal("bar", console.lines.At(1))
@@ -74,17 +74,17 @@ func (s *consoleTestSuite) testPrintLines() {
 	s.Equal("console> ", console.commandLine.toString())
 }
 
-func (s *consoleTestSuite) testPutCommand() {
+func (s *consoleTestSuite) TestPutCommand() {
 	console.PutCommand("foo")
 	s.Equal("console> foo", console.lines.At(0))
 }
 
-func (s *consoleTestSuite) testPutString() {
+func (s *consoleTestSuite) TestPutString() {
 	console.PutString("foo")
 	s.Equal("console> foo", console.commandLine.toString())
 }
 
-func (s *consoleTestSuite) testPutReadline() {
+func (s *consoleTestSuite) TestPutReadline() {
 	console.PutString("foo")
 	console.carriageReturn()
 	console.PutString("bar")
@@ -126,7 +126,7 @@ func (s *consoleTestSuite) testPutReadline() {
 	s.Equal("console> biz", console.commandLine.toString())
 }
 
-func (s *consoleTestSuite) testMoveCursor() {
+func (s *consoleTestSuite) TestMoveCursor() {
 	console.PutString("bar")
 
 	console.PutReadline(CURSOR_LEFT)
@@ -136,12 +136,12 @@ func (s *consoleTestSuite) testMoveCursor() {
 	s.Equal(3, console.commandLine.cursorPosition)
 }
 
-func (s *consoleTestSuite) testCommandline() {
+func (s *consoleTestSuite) TestCommandline() {
 	console.PutString("bar")
 	s.Equal("console> bar", console.Commandline())
 }
 
-func (s *consoleTestSuite) testSetPrompt() {
+func (s *consoleTestSuite) TestSetPrompt() {
 	console.SetPrompt("foo> ")
 	console.PutString("abc")
 	s.Equal("foo> abc", console.commandLine.toString())

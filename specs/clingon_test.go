@@ -13,11 +13,11 @@ type specsSuite struct {
 	pt.Suite
 }
 
-func (s *specsSuite) beforeAll() {
+func (s *specsSuite) BeforeAll() {
 	initTest()
 }
 
-func (s *specsSuite) afterAll() {
+func (s *specsSuite) AfterAll() {
 	// Request termination of the rendering loop,
 	// and wait until it actually terminates
 	terminateRendering <- 0
@@ -26,12 +26,12 @@ func (s *specsSuite) afterAll() {
 	sdl.Quit()
 }
 
-func (s *specsSuite) should_receive_commands() {
+func (s *specsSuite) Should_receive_commands() {
 	s.True(Interact([]Interactor{NewEnterCommand(console, "", 2e8)}))
 	s.True(Interact([]Interactor{NewEnterCommand(console, "Hello gopher!", 2e8)}))
 }
 
-func (s *specsSuite) should_browse_history() {
+func (s *specsSuite) Should_browse_history() {
 	s.True(Interact([]Interactor{NewEnterCommand(console, "foo", 2e8)}))
 	s.True(Interact([]Interactor{NewEnterCommand(console, "bar", 2e8)}))
 	s.True(Interact([]Interactor{NewEnterCommand(console, "biz", 2e8)}))
@@ -47,7 +47,7 @@ func (s *specsSuite) should_browse_history() {
 		2e8)}))
 }
 
-func (s *specsSuite) should_move_cursor() {
+func (s *specsSuite) Should_move_cursor() {
 	s.True(Interact([]Interactor{NewEnterCommand(console, "fooooooooooooooooo!!!!", 2e8)}))
 	s.True(Interact([]Interactor{NewBrowseHistory(console, []int{clingon.HISTORY_PREV}, 2e8)}))
 	s.True(Interact([]Interactor{NewMoveCursor(console, []int{
@@ -67,7 +67,7 @@ func (s *specsSuite) should_move_cursor() {
 		2e8)}))
 }
 
-func (s *specsSuite) should_slidedown_slideup() {
+func (s *specsSuite) Should_slidedown_slideup() {
 	var anim *clingon.Animation
 
 	for i := 1; i <= 3; i++ {
@@ -83,7 +83,7 @@ func (s *specsSuite) should_slidedown_slideup() {
 	}
 }
 
-func (s *specsSuite) should_scroll_up_down() {
+func (s *specsSuite) Should_scroll_up_down() {
 	for i := 0; i < 40; i++ {
 		s.True(Interact([]Interactor{NewEnterCommand(console, fmt.Sprintf("Line %d", i), 0)}))
 	}
@@ -99,7 +99,7 @@ func (s *specsSuite) should_scroll_up_down() {
 	s.True(true)
 }
 
-func (s *specsSuite) should_pause_unpause() {
+func (s *specsSuite) Should_pause_unpause() {
 	renderer := console.RendererOrNil().(*clingon.SDLRenderer)
 
 	console.Print("Pause the console")
@@ -111,8 +111,8 @@ func (s *specsSuite) should_pause_unpause() {
 	s.True(true)
 }
 
-func (s *specsSuite) should_set_a_new_renderer() {
-	console.Print("Cursor should blink before switching to the new renderer")
+func (s *specsSuite) Should_set_a_new_renderer() {
+	console.Print("Cursor Should blink before switching to the new renderer")
 	time.Sleep(2e9)
 
 	// Request termination of the current rendering loop,
@@ -125,7 +125,7 @@ func (s *specsSuite) should_set_a_new_renderer() {
 	console.SetRenderer(newRenderer)
 	newRenderingLoop(newRenderer)
 
-	console.Print("Cursor should blink after switching to the new renderer")
+	console.Print("Cursor Should blink after switching to the new renderer")
 	time.Sleep(2e9)
 	s.True(true)
 }
