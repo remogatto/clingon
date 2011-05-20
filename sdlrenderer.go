@@ -243,7 +243,7 @@ func (renderer *SDLRenderer) renderCursorRect(x int) {
 func (renderer *SDLRenderer) cursorX(commandLine *commandLine) int {
 	var (
 		cursorX  int = int(renderer.commandLineRect.X)
-		finalPos = commandLine.cursorPosition + len(commandLine.prompt)
+		finalPos     = commandLine.cursorPosition + len(commandLine.prompt)
 	)
 
 	for pos, c := range commandLine.toString() {
