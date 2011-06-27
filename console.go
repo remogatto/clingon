@@ -242,6 +242,7 @@ func (console *Console) SetPrompt(prompt string) {
 }
 
 // Print a slice of strings on the console.
+// The strings should not contain '\n'.
 func (console *Console) PrintLines(strings []string) {
 	if len(strings) > 0 {
 		console.pushLines(strings)
@@ -255,19 +256,13 @@ func (console *Console) PrintLines(strings []string) {
 	}
 }
 
-// Print a string on the console. The string is splitted in lines by
-// newline characters.
+// Print a string on the console and go to the next line.
+// This function can handle strings containing '\n'.
 func (console *Console) Print(str string) {
-	if str != "" {
-		console.pushLines(strings.Split(str, "\n", -1))
+	if strings.HasSuffix(str, "\n") {
+		str = str[0 : len(str)-1]
 	}
-
-	console.mu.RLock()
-	renderer := console.renderer_orNil
-	console.mu.RUnlock()
-	if renderer != nil {
-		renderer.EventCh() <- Cmd_UpdateConsole{console}
-	}
+	console.PrintLines(strings.Split(str, "\n", -1))
 }
 
 // Get the current command line as string.
