@@ -21,4 +21,3 @@ func (eval *ShellEvaluator) Run(console *clingon.Console, command string) os.Err
 
 	return err
 }
-
