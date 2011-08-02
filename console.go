@@ -262,7 +262,7 @@ func (console *Console) Print(str string) {
 	if strings.HasSuffix(str, "\n") {
 		str = str[0 : len(str)-1]
 	}
-	console.PrintLines(strings.Split(str, "\n", -1))
+	console.PrintLines(strings.Split(str, "\n"))
 }
 
 // Get the current command line as string.
