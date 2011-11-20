@@ -1,7 +1,7 @@
 package specs
 
 import (
-	"⚛sdl"
+	"atom/sdl"
 	"testing"
 	pt "prettytest"
 	"fmt"

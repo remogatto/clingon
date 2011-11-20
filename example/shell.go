@@ -1,8 +1,8 @@
 package main
 
 import (
-	"⚛sdl"
-	"⚛sdl/ttf"
+	"atom/sdl"
+	"atom/sdl/ttf"
 	"fmt"
 	"flag"
 	"os"

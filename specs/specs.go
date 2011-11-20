@@ -1,8 +1,8 @@
 package specs
 
 import (
-	"⚛sdl"
-	"⚛sdl/ttf"
+	"atom/sdl"
+	"atom/sdl/ttf"
 	"time"
 	"clingon"
 	"os"
