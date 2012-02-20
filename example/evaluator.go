@@ -2,14 +2,14 @@ package main
 
 import (
 	"bytes"
-	"exec"
+	"github.com/remogatto/clingon"
 	"os"
-	"clingon"
+	"os/exec"
 )
 
 type ShellEvaluator struct{}
 
-func (eval *ShellEvaluator) Run(console *clingon.Console, command string) os.Error {
+func (eval *ShellEvaluator) Run(console *clingon.Console, command string) error {
 	var buf bytes.Buffer
 
 	cmd := exec.Command(os.Getenv("SHELL"), "-c", command)

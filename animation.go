@@ -1,8 +1,8 @@
 package clingon
 
 import (
-	"time"
 	"math"
+	"time"
 )
 
 const DEFAULT_ANIMATION_FPS = 30
@@ -47,7 +47,7 @@ func NewAnimation(f func(t float64) float64, length float64) *Animation {
 func (animation *Animation) Start() {
 	if !animation.running {
 		// Note: the "+1" ensures that the argument to NewTicker is >= 1
-		ticker := time.NewTicker(int64(1e9*animation.dt) + 1)
+		ticker := time.NewTicker(time.Duration(1e9*animation.dt) + 1)
 		go animation.animate(ticker)
 
 		animation.running = true

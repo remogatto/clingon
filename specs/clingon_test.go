@@ -1,11 +1,11 @@
 package specs
 
 import (
-	"atom/sdl"
-	"testing"
-	pt "prettytest"
 	"fmt"
-	"clingon"
+	"github.com/0xe2-0x9a-0x9b/Go-SDL/sdl"
+	"github.com/remogatto/clingon"
+	pt "github.com/remogatto/prettytest"
+	"testing"
 	"time"
 )
 

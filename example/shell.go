@@ -1,12 +1,12 @@
 package main
 
 import (
-	"atom/sdl"
-	"atom/sdl/ttf"
-	"fmt"
 	"flag"
+	"fmt"
+	"github.com/0xe2-0x9a-0x9b/Go-SDL/sdl"
+	"github.com/0xe2-0x9a-0x9b/Go-SDL/ttf"
+	"github.com/remogatto/clingon"
 	"os"
-	"clingon"
 )
 
 var (
@@ -84,7 +84,8 @@ func initialize(config *configuration) *renderer {
 	sdl.EnableUNICODE(1)
 
 	if config.fullscreen {
-		appSurface = sdl.SetVideoMode(640, 480, 32, sdl.FULLSCREEN)
+		flags := sdl.FULLSCREEN
+		appSurface = sdl.SetVideoMode(640, 480, 32, uint32(flags))
 		sdl.ShowCursor(sdl.DISABLE)
 	} else {
 		appSurface = sdl.SetVideoMode(640, 480, 32, 0)

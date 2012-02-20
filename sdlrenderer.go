@@ -1,8 +1,8 @@
 package clingon
 
 import (
-	"atom/sdl"
-	"atom/sdl/ttf"
+	"github.com/0xe2-0x9a-0x9b/Go-SDL/sdl"
+	"github.com/0xe2-0x9a-0x9b/Go-SDL/ttf"
 	"unsafe"
 )
 
@@ -119,7 +119,7 @@ func (renderer *SDLRenderer) calcCommandLineRect() {
 }
 
 func (renderer *SDLRenderer) resizeInternalSurface(console *Console) {
-	h := uint(console.lines.Len()+1) * renderer.fontHeight
+	h := uint(len(console.lines)+1) * renderer.fontHeight
 	if h > renderer.internalSurfaceMaxHeight {
 		h = renderer.internalSurfaceMaxHeight
 	}
@@ -145,9 +145,9 @@ func (renderer *SDLRenderer) renderCommandLine(commandLine *commandLine) {
 
 func (renderer *SDLRenderer) renderConsole(console *Console) {
 	renderer.resizeInternalSurface(console)
-	for i := console.lines.Len(); i > 0; i-- {
+	for i := len(console.lines); i > 0; i-- {
 		if uint(i) < renderer.lastVisibleLine {
-			renderer.renderLine(i, console.lines.At(console.lines.Len()-i))
+			renderer.renderLine(i, console.lines[len(console.lines)-i])
 		} else {
 			continue
 		}
