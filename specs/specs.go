@@ -1,11 +1,10 @@
 package specs
 
 import (
-	"atom/sdl"
-	"atom/sdl/ttf"
+	"github.com/0xe2-0x9a-0x9b/Go-SDL/sdl"
+	"github.com/0xe2-0x9a-0x9b/Go-SDL/ttf"
+	"github.com/remogatto/clingon"
 	"time"
-	"clingon"
-	"os"
 )
 
 const (
@@ -39,7 +38,7 @@ type NewAnimation struct {
 
 type Echoer struct{}
 
-func (e *Echoer) Run(console *clingon.Console, command string) os.Error {
+func (e *Echoer) Run(console *clingon.Console, command string) error {
 	console.Print(command)
 	return nil
 }
@@ -51,10 +50,10 @@ type Interactor interface {
 type EnterCommand struct {
 	console *clingon.Console
 	command string
-	time    int64
+	time    time.Duration
 }
 
-func NewEnterCommand(console *clingon.Console, command string, time int64) *EnterCommand {
+func NewEnterCommand(console *clingon.Console, command string, time time.Duration) *EnterCommand {
 	return &EnterCommand{console, command + "\u000d", time}
 }
 
@@ -71,10 +70,10 @@ func (i *EnterCommand) Interact(done chan bool) {
 type BrowseHistory struct {
 	console *clingon.Console
 	dirs    []int
-	time    int64
+	time    time.Duration
 }
 
-func NewBrowseHistory(console *clingon.Console, dirs []int, time int64) *BrowseHistory {
+func NewBrowseHistory(console *clingon.Console, dirs []int, time time.Duration) *BrowseHistory {
 	return &BrowseHistory{console, dirs, time}
 }
 func (i *BrowseHistory) Interact(done chan bool) {
@@ -90,10 +89,10 @@ func (i *BrowseHistory) Interact(done chan bool) {
 type MoveCursor struct {
 	console *clingon.Console
 	dirs    []int
-	time    int64
+	time    time.Duration
 }
 
-func NewMoveCursor(console *clingon.Console, dirs []int, time int64) *MoveCursor {
+func NewMoveCursor(console *clingon.Console, dirs []int, time time.Duration) *MoveCursor {
 	return &MoveCursor{console, dirs, time}
 }
 func (i *MoveCursor) Interact(done chan bool) {
