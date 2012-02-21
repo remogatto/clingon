@@ -58,40 +58,13 @@ difficult to add more backends (e.g. opengl, draw/x11, etc.)
 
 # Installation
 
-In order to use the SDL renderer, you should install the following
-packages (assuming a debian-flavored linux distribution):
-
-    sudo apt-get install libsdl1.2-dev libsdl-mixer1.2-dev libsdl-image1.2-dev libsdl-ttf2.0-dev
-
-Clingon is using the GOAM build tool. To install it:
-
-    goinstall github.com/0xe2-0x9a-0x9b/goam
-    cd $GOROOT/src/pkg/github.com/0xe2-0x9a-0x9b/goam
-    make install
-
-To install the dependencies and build the package:
-
-    git clone https://github.com/remogatto/clingon.git
-    cd clingon
-    goam make
-
-To install (uninstall) clingon:
-
-    goam install
-    (goam uninstall)
-
-The following dependencies are installed automatically:
-
-* [⚛Go-SDL](https://github.com/0xe2-0x9a-0x9b/Go-SDL)
-* [prettytest](https://github.com/remogatto/prettytest)
-
-# Quick start
+    go get -v github.com/remogatto/clingon
 
 After installing the package try the sample code in <tt>example/</tt>
 folder:
 
-    cd clingon
-    example/shell -bg-image testdata/gopher.jpg testdata/VeraMono.ttf
+    cd $GOPATH/github.com/remogatto/clingon/example
+    make run
 
 # TODO
 

@@ -1,9 +1,9 @@
 package clingon
 
 import (
-	"atom/sdl"
-	"atom/sdl/ttf"
 	"fmt"
+	"github.com/0xe2-0x9a-0x9b/Go-SDL/sdl"
+	"github.com/0xe2-0x9a-0x9b/Go-SDL/ttf"
 	"testing"
 )
 
@@ -63,7 +63,7 @@ func BenchmarkRenderConsoleBlended(b *testing.B) {
 	for i := 0; i < 1000; i++ {
 		strings = append(strings, fmt.Sprintf("Line %d %s", i, "The quick brown fox jumps over the lazy dog"))
 	}
-	console.pushLines(strings)
+	console.appendLines(strings)
 	sdlrenderer.Blended = true
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
@@ -79,7 +79,7 @@ func BenchmarkRenderConsoleSolid(b *testing.B) {
 	for i := 0; i < 1000; i++ {
 		strings = append(strings, fmt.Sprintf("Line %d %s", i, "The quick brown fox jumps over the lazy dog"))
 	}
-	console.pushLines(strings)
+	console.appendLines(strings)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		sdlrenderer.renderConsole(console)

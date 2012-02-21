@@ -1,11 +1,9 @@
 package clingon
 
 import (
-	"os"
-	"time"
 	"strings"
-	"container/vector"
 	"sync"
+	"time"
 )
 
 const (
@@ -22,7 +20,7 @@ const (
 )
 
 type Evaluator interface {
-	Run(console *Console, command string) os.Error
+	Run(console *Console, command string) error
 }
 
 type Cmd_UpdateConsole struct {
@@ -47,12 +45,11 @@ type Renderer interface {
 type commandLine struct {
 	prompt string
 
-	// The content of the prompt line as a string vector
-	content *vector.StringVector
+	// The prompt line as a string vector
+	content []string
 
-	// The history of the command line.
-	// This is a vector of '*vector.StringVector'.
-	history vector.Vector
+	// The history of the command line
+	history [][]string
 
 	// Cursor position on current line
 	cursorPosition int
@@ -60,18 +57,10 @@ type commandLine struct {
 	historyPosition int
 }
 
-func stringVectorToString(v *vector.StringVector) string {
-	var currLine string
-	for _, str := range *v {
-		currLine += str
-	}
-	return currLine
-}
-
 func newCommandLine(prompt string) *commandLine {
 	return &commandLine{
 		prompt:          prompt,
-		content:         new(vector.StringVector),
+		content:         nil,
 		cursorPosition:  0,
 		historyPosition: 0,
 	}
@@ -88,7 +77,12 @@ func (commandLine *commandLine) empty() bool {
 
 // Insert a string in the prompt line
 func (commandLine *commandLine) insertChar(str string) {
-	commandLine.content.Insert(commandLine.cursorPosition, str)
+	// Insert 'str' at commandLine.cursorPosition
+	commandLine.content = append(commandLine.content, "")
+	pos := commandLine.cursorPosition
+	copy(commandLine.content[pos+1:], commandLine.content[pos:])
+	commandLine.content[pos] = str
+
 	commandLine.incCursorPosition(len(str))
 }
 
@@ -96,22 +90,29 @@ func (commandLine *commandLine) insertChar(str string) {
 func (commandLine *commandLine) key_backspace() {
 	if commandLine.cursorPosition >= 1 {
 		commandLine.decCursorPosition(1)
-		commandLine.content.Delete(commandLine.cursorPosition)
+
+		// Delete the element at 'commandLine.cursorPosition'
+		pos := commandLine.cursorPosition
+		copy(commandLine.content[pos:], commandLine.content[pos+1:])
+		commandLine.content = commandLine.content[0 : len(commandLine.content)-1]
 	}
 }
 
 // Delete the character at the current cursor position
 func (commandLine *commandLine) key_delete() {
-	if commandLine.cursorPosition < commandLine.content.Len() {
-		commandLine.content.Delete(commandLine.cursorPosition)
+	if commandLine.cursorPosition < len(commandLine.content) {
+		// Delete the element at 'commandLine.cursorPosition'
+		pos := commandLine.cursorPosition
+		copy(commandLine.content[pos:], commandLine.content[pos+1:])
+		commandLine.content = commandLine.content[0 : len(commandLine.content)-1]
 	}
 }
 
 // Clear the prompt line
 func (commandLine *commandLine) clear() {
-	commandLine.content = new(vector.StringVector)
+	commandLine.content = []string(nil)
 	commandLine.cursorPosition = 0
-	commandLine.historyPosition = commandLine.history.Len()
+	commandLine.historyPosition = len(commandLine.history)
 }
 
 // Browse history on the command line
@@ -125,19 +126,21 @@ func (commandLine *commandLine) browseHistory(direction int) {
 		commandLine.historyPosition = 0
 		return
 	}
-	if commandLine.historyPosition >= commandLine.history.Len() {
+	if commandLine.historyPosition >= len(commandLine.history) {
 		commandLine.clear()
 		return
 	}
-	newContent := commandLine.history.At(commandLine.historyPosition).(*vector.StringVector).Copy()
-	commandLine.content = &newContent
+
+	var newContent []string
+	newContent = append(newContent, commandLine.history[commandLine.historyPosition]...)
+	commandLine.content = newContent
 	commandLine.incCursorPosition(len(commandLine.toString()))
 }
 
 // Push current command line on the history and reset the history counter
 func (commandLine *commandLine) push() string {
 	if commandLine.contentToString() != "" && commandLine.notInHistory(commandLine.contentToString()) {
-		commandLine.history.Push(commandLine.content)
+		commandLine.history = append(commandLine.history, commandLine.content)
 	}
 	line := commandLine.contentToString()
 	commandLine.clear()
@@ -159,7 +162,7 @@ func (commandLine *commandLine) moveCursor(dir int) {
 }
 
 func (commandLine *commandLine) contentToString() string {
-	return stringVectorToString(commandLine.content)
+	return strings.Join(commandLine.content, "")
 }
 
 func (commandLine *commandLine) decCursorPosition(dec int) {
@@ -171,15 +174,14 @@ func (commandLine *commandLine) decCursorPosition(dec int) {
 
 func (commandLine *commandLine) incCursorPosition(inc int) {
 	commandLine.cursorPosition += inc
-	if commandLine.cursorPosition > commandLine.content.Len() {
-		commandLine.cursorPosition = commandLine.content.Len()
+	if commandLine.cursorPosition > len(commandLine.content) {
+		commandLine.cursorPosition = len(commandLine.content)
 	}
 }
 
 func (commandLine *commandLine) notInHistory(line string) bool {
-	for _, v := range commandLine.history {
-		strVector := v.(*vector.StringVector)
-		historyEntry := stringVectorToString(strVector)
+	for _, h := range commandLine.history {
+		historyEntry := strings.Join(h, "")
 		if line == historyEntry {
 			return false
 		}
@@ -188,8 +190,8 @@ func (commandLine *commandLine) notInHistory(line string) bool {
 }
 
 type Console struct {
-	commandLine     *commandLine         // An instance of the commandline
-	lines           *vector.StringVector // Lines of text above the commandline
+	commandLine     *commandLine // An instance of the commandline
+	lines           []string     // Lines of text above the commandline
 	renderer_orNil  Renderer
 	evaluator_orNil Evaluator
 	mu              sync.RWMutex
@@ -198,7 +200,7 @@ type Console struct {
 // Initialize a new console object passing to it an evaluator
 func NewConsole(evaluator_orNil Evaluator) *Console {
 	console := &Console{
-		lines:           new(vector.StringVector),
+		lines:           []string(nil),
 		commandLine:     newCommandLine("console> "),
 		renderer_orNil:  nil,
 		evaluator_orNil: evaluator_orNil,
@@ -229,9 +231,8 @@ func (console *Console) SetRenderer(renderer_orNil Renderer) {
 // Dump the console content as a string.
 func (console *Console) String() string {
 	var result string
-	for _, str := range *console.lines {
-		result += str + "\n"
-	}
+	result += strings.Join(console.lines, "\n")
+	result += "\n"
 	result += console.commandLine.toString()
 	return result
 }
@@ -245,7 +246,7 @@ func (console *Console) SetPrompt(prompt string) {
 // The strings should not contain '\n'.
 func (console *Console) PrintLines(strings []string) {
 	if len(strings) > 0 {
-		console.pushLines(strings)
+		console.appendLines(strings)
 	}
 
 	console.mu.RLock()
@@ -293,7 +294,7 @@ func (console *Console) PutUnicode(value uint16) {
 		command := console.carriageReturn()
 		if console.evaluator_orNil != nil {
 			if err := console.evaluator_orNil.Run(console, command); err != nil {
-				console.Print(err.String())
+				console.Print(err.Error())
 			}
 		}
 		event = Cmd_UpdateConsole{console}
@@ -357,19 +358,16 @@ func (console *Console) ClearCommandline() {
 	}
 }
 
-// Push lines of text on the console. The argument is a slice of
-// strings.
-func (console *Console) pushLines(lines []string) {
-	for _, line := range lines {
-		console.lines.Push(line)
-	}
+// Push lines of text on the console
+func (console *Console) appendLines(lines []string) {
+	console.lines = append(console.lines, lines...)
 }
 
 // Push the current commandline in the console history.
 // Return it as a string.
 func (console *Console) carriageReturn() string {
 	commandLine := console.commandLine.push()
-	console.lines.Push(console.commandLine.prompt + commandLine)
+	console.lines = append(console.lines, console.commandLine.prompt+commandLine)
 	return commandLine
 }
 

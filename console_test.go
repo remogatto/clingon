@@ -1,8 +1,8 @@
 package clingon
 
 import (
+	pt "github.com/remogatto/prettytest"
 	"testing"
-	pt "prettytest"
 )
 
 var console *Console
@@ -49,34 +49,34 @@ func (s *consoleTestSuite) TestString() {
 }
 
 func (s *consoleTestSuite) TestPutUnicode() {
-	console.PutUnicode(uint16([]int("a")[0]))
-	console.PutUnicode(uint16([]int("b")[0]))
-	console.PutUnicode(uint16([]int("c")[0]))
-	s.Equal("a", console.commandLine.content.At(0))
-	s.Equal("b", console.commandLine.content.At(1))
-	s.Equal("c", console.commandLine.content.At(2))
+	console.PutUnicode('a')
+	console.PutUnicode('b')
+	console.PutUnicode('c')
+	s.Equal("a", console.commandLine.content[0])
+	s.Equal("b", console.commandLine.content[1])
+	s.Equal("c", console.commandLine.content[2])
 	s.Equal(3, console.commandLine.cursorPosition)
 }
 
 func (s *consoleTestSuite) TestPrint() {
 	console.Print("foo\nbar\nbaz")
-	s.Equal("foo", console.lines.At(0))
-	s.Equal("bar", console.lines.At(1))
-	s.Equal("baz", console.lines.At(2))
+	s.Equal("foo", console.lines[0])
+	s.Equal("bar", console.lines[1])
+	s.Equal("baz", console.lines[2])
 	s.Equal("console> ", console.commandLine.toString())
 }
 
 func (s *consoleTestSuite) TestPrintLines() {
 	console.PrintLines([]string{"foo", "bar", "baz"})
-	s.Equal("foo", console.lines.At(0))
-	s.Equal("bar", console.lines.At(1))
-	s.Equal("baz", console.lines.At(2))
+	s.Equal("foo", console.lines[0])
+	s.Equal("bar", console.lines[1])
+	s.Equal("baz", console.lines[2])
 	s.Equal("console> ", console.commandLine.toString())
 }
 
 func (s *consoleTestSuite) TestPutCommand() {
 	console.PutCommand("foo")
-	s.Equal("console> foo", console.lines.At(0))
+	s.Equal("console> foo", console.lines[0])
 }
 
 func (s *consoleTestSuite) TestPutString() {
