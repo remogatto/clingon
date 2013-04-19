@@ -38,8 +38,8 @@ func (s *consoleTestSuite) Before() {
 func (s *consoleTestSuite) TestNewConsole() {
 	console := NewConsole(nil)
 	console.SetRenderer(NewTestRenderer())
-	s.NotNil(console)
-	s.NotNil(console.lines)
+	s.Not(s.Nil(console))
+	s.Not(s.Nil(console.lines))
 }
 
 func (s *consoleTestSuite) TestString() {

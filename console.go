@@ -200,7 +200,7 @@ type Console struct {
 // Initialize a new console object passing to it an evaluator
 func NewConsole(evaluator_orNil Evaluator) *Console {
 	console := &Console{
-		lines:           []string(nil),
+		lines:           make([]string, 0),
 		commandLine:     newCommandLine("console> "),
 		renderer_orNil:  nil,
 		evaluator_orNil: evaluator_orNil,
