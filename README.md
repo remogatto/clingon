@@ -1,3 +1,5 @@
+[![Build Status](https://drone.io/github.com/remogatto/clingon/status.png)](https://drone.io/github.com/remogatto/clingon/latest)
+
 # What's that?
 
 Clingon (Command Line INterface for GO Nuts) is a Go library that
