@@ -2,8 +2,8 @@ package clingon
 
 import (
 	"fmt"
-	"github.com/0xe2-0x9a-0x9b/Go-SDL/sdl"
-	"github.com/0xe2-0x9a-0x9b/Go-SDL/ttf"
+	"github.com/scottferg/Go-SDL/sdl"
+	"github.com/scottferg/Go-SDL/ttf"
 	"testing"
 )
 
